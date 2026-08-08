@@ -121,14 +121,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Initial purge of any sample/demo data to ensure clean database for user
-  useEffect(() => {
-    if (localStorage.getItem('sample_data_purged_v4') !== 'true') {
-      clearAllData().then(() => {
-        localStorage.setItem('sample_data_purged_v4', 'true');
-      });
-    }
-  }, []);
+  // IMPORTANT: Do not purge Firestore automatically on application startup.
+  // Data deletion is available explicitly from Settings.
 
   // Subscribe to Firebase real-time sync
   useEffect(() => {
