@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // App data collections
+    match /categories/{id} {
+      allow read, write: if true;
+    }
+    match /classes/{id} {
+      allow read, write: if true;
+    }
+    match /students/{id} {
+      allow read, write: if true;
+    }
+    match /rooms/{id} {
+      allow read, write: if true;
+    }
+    match /sessions/{id} {
+      allow read, write: if true;
+    }
+    match /seatingArrangements/{id} {
+      allow read, write: if true;
+    }
+    // Admin credentials + app settings
+    match /settings/{doc} {
+      allow read, write: if true;
+    }
+  }
+}

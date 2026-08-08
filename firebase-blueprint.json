@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "categories": {
+      "title": "Category",
+      "description": "Exam categories such as Secondary, Senior Secondary, Degree",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "classes": {
+      "title": "Class",
+      "description": "Classes belonging to an exam category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "categoryId"]
+    },
+    "students": {
+      "title": "Student",
+      "description": "Student details including admission number and class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "admissionNo": { "type": "string" },
+        "name": { "type": "string" },
+        "classId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "admissionNo", "name", "classId"]
+    },
+    "rooms": {
+      "title": "Room",
+      "description": "Exam rooms with layout sides or online capacity and slots",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "examMode": { "type": "string" },
+        "sides": { "type": "array" },
+        "onlineCapacity": { "type": "number" },
+        "onlineSlots": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "categoryId", "examMode"]
+    },
+    "sessions": {
+      "title": "Session",
+      "description": "Exam timetables and sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "classConfigs": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "date", "time", "classConfigs"]
+    },
+    "seatingArrangements": {
+      "title": "Seating Arrangement",
+      "description": "Generated exam seating allocations for sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "generatedAt": { "type": "string" },
+        "allocations": { "type": "array" },
+        "onlineAllocations": { "type": "array" },
+        "roomSummaries": { "type": "array" }
+      },
+      "required": ["id", "sessionId"]
+    }
+  }
+}

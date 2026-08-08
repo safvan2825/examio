@@ -1,0 +1,11 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Freebuff desktop app internals (local database, run docs, logs)
+.freebuff/

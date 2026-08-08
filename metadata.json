@@ -1,0 +1,6 @@
+{
+  "name": "Exam Seating Generator",
+  "description": "Professional Exam Seating & Room Diagram Generator for Noorul Huda Examination Board",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
