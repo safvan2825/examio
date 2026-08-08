@@ -52,6 +52,45 @@ import {
   AdminCredentials,
 } from './types';
 
+// Firebase Realtime Database can return nested arrays as objects when older data
+// was written/imported with numeric keys. Normalize those collections before they
+// reach components that use array methods such as filter/map/forEach.
+const toArray = <T,>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value as T[];
+  if (value && typeof value === 'object') return Object.values(value) as T[];
+  return [];
+};
+
+const normalizeSession = (session: ExamSession): ExamSession => ({
+  ...session,
+  classConfigs: toArray(session.classConfigs),
+});
+
+const normalizeRoom = (room: Room): Room => ({
+  ...room,
+  sides: room.sides === undefined
+    ? undefined
+    : toArray<any>(room.sides).map((side) => ({ ...side })),
+  onlineSlots: room.onlineSlots === undefined
+    ? undefined
+    : toArray<string>(room.onlineSlots),
+});
+
+const normalizeArrangement = (arr: SeatingArrangement): SeatingArrangement => ({
+  ...arr,
+  manualAllocations: toArray(arr.manualAllocations),
+  onlineAllocations: toArray(arr.onlineAllocations),
+  roomDiagrams: toArray<any>(arr.roomDiagrams).map((diagram) => ({
+    ...diagram,
+    sides: toArray<any>(diagram.sides).map((side) => ({
+      ...side,
+      grid: toArray<any>(side.grid).map((row) => toArray<any>(row)),
+    })),
+    classSummary: toArray<any>(diagram.classSummary),
+  })),
+  roomSummaries: toArray<any>(arr.roomSummaries),
+});
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -118,9 +157,11 @@ export default function App() {
     const unsubCat = subscribeCategories(setCategories);
     const unsubCls = subscribeClasses(setClasses);
     const unsubSt = subscribeStudents(setStudents);
-    const unsubRm = subscribeRooms(setRooms);
-    const unsubSess = subscribeSessions(setSessions);
-    const unsubSeat = subscribeSeatingArrangements(setSeatingArrangements);
+    const unsubRm = subscribeRooms((data) => setRooms(data.map(normalizeRoom)));
+    const unsubSess = subscribeSessions((data) => setSessions(data.map(normalizeSession)));
+    const unsubSeat = subscribeSeatingArrangements((data) =>
+      setSeatingArrangements(data.map(normalizeArrangement))
+    );
 
     return () => {
       unsubCat();
