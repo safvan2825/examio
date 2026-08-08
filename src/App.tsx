@@ -114,7 +114,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Real-time synchronization now comes from Firebase Realtime Database.
   useEffect(() => {
     const unsubCat = subscribeCategories(setCategories);
     const unsubCls = subscribeClasses(setClasses);
@@ -132,6 +131,20 @@ export default function App() {
       unsubSeat();
     };
   }, []);
+
+  // Firebase loads sessions asynchronously. Keep the generator synchronized with
+  // the first available session instead of leaving it stuck on an empty selection.
+  useEffect(() => {
+    if (!selectedGeneratorSessionId && sessions.length > 0) {
+      setSelectedGeneratorSessionId(sessions[0].id);
+    } else if (
+      selectedGeneratorSessionId &&
+      sessions.length > 0 &&
+      !sessions.some((s) => s.id === selectedGeneratorSessionId)
+    ) {
+      setSelectedGeneratorSessionId(sessions[0].id);
+    }
+  }, [sessions, selectedGeneratorSessionId]);
 
   const handleSelectSessionForGenerator = (sessionId: string) => {
     setSelectedGeneratorSessionId(sessionId);
@@ -234,7 +247,7 @@ export default function App() {
             categories={categories}
             rooms={rooms}
             arrangements={seatingArrangements}
-            selectedSessionIdFromNav={selectedGeneratorSessionId}
+            selectedSessionIdFromNav={selectedGeneratorSessionId || sessions[0]?.id || ''}
             onSaveArrangement={saveSeatingArrangement}
             onOpenPrintModal={handleOpenPrintModal}
           />
