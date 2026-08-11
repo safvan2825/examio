@@ -1,0 +1,153 @@
+/* Examio unified visual system — intentionally scoped to the main content area so the sidebar and functional layout remain intact. */
+.examio-main{
+  background:linear-gradient(135deg,#edf9fb 0%,#f8fcfd 52%,#e8f5f7 100%);
+}
+
+/* Universal content cards */
+.examio-main .bg-white{
+  background:rgba(255,255,255,.90)!important;
+  border-color:rgba(112,181,191,.22)!important;
+  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+}
+.examio-main .bg-slate-50{
+  background:#f3f9fa!important;
+}
+.examio-main .border-slate-200,
+.examio-main .border-slate-200\/80,
+.examio-main .border-slate-100{
+  border-color:#d3e7e9!important;
+}
+.examio-main .rounded-lg,
+.examio-main .rounded-2xl{
+  border-radius:20px!important;
+}
+.examio-main .shadow-2xs,
+.examio-main .shadow-xs{
+  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+}
+
+/* Typography */
+.examio-main .text-slate-900,
+.examio-main .text-slate-800{color:#153b44!important}
+.examio-main .text-slate-700,
+.examio-main .text-slate-600{color:#52767d!important}
+.examio-main .text-slate-500,
+.examio-main .text-slate-400{color:#7d969b!important}
+
+/* Dashboard hero */
+.examio-main .bg-slate-900{
+  background:linear-gradient(135deg,#083d46 0%,#07505a 58%,#06404a 100%)!important;
+  border:1px solid rgba(211,248,250,.12)!important;
+  border-radius:24px!important;
+  box-shadow:0 18px 42px rgba(17,83,93,.16)!important;
+}
+.examio-main .bg-slate-900 .text-slate-400{color:#a9cdd1!important}
+
+/* Primary actions */
+.examio-main .bg-blue-600,
+.examio-main .bg-emerald-600{
+  background:linear-gradient(135deg,#18b9c5,#1599aa)!important;
+  border:0!important;
+  box-shadow:0 10px 24px rgba(21,153,170,.20)!important;
+}
+.examio-main .bg-blue-600:hover,
+.examio-main .bg-emerald-600:hover{
+  background:linear-gradient(135deg,#22c3ce,#18a5b4)!important;
+}
+.examio-main .text-blue-600{color:#138f9a!important}
+.examio-main .text-emerald-700,
+.examio-main .text-emerald-600{color:#1597a3!important}
+
+/* Header/action bars on Classes, Students, Subjects, Rooms, etc. */
+.examio-main > .space-y-6 > :first-child,
+.examio-main > div.space-y-6 > :first-child{
+  border-radius:22px!important;
+  background:rgba(255,255,255,.92)!important;
+  border:1px solid rgba(112,181,191,.22)!important;
+  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+}
+
+/* Collection cards */
+.examio-main .grid > .bg-white{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.examio-main .grid > .bg-white:hover{
+  transform:translateY(-2px);
+  box-shadow:0 18px 40px rgba(40,88,100,.11)!important;
+  border-color:#8fd4da!important;
+}
+
+/* Class/category/student icon blocks */
+.examio-main .bg-indigo-50{
+  background:#eaf0ff!important;
+  color:#5b5ce2!important;
+}
+.examio-main .bg-slate-100{
+  background:#edf6f7!important;
+}
+
+/* Inputs and selects */
+.examio-main input,
+.examio-main select,
+.examio-main textarea{
+  border-color:#cfe3e6!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  color:#193c44!important;
+}
+.examio-main input:focus,
+.examio-main select:focus,
+.examio-main textarea:focus{
+  border-color:#58bfc8!important;
+  box-shadow:0 0 0 3px rgba(88,191,200,.13)!important;
+}
+
+/* Destructive controls */
+.examio-main .bg-rose-600{
+  background:#e45b73!important;
+  border-radius:13px!important;
+}
+.examio-main .bg-rose-50{
+  background:#fff2f4!important;
+  border-color:#ffd6dc!important;
+}
+
+/* Dashboard stat cards */
+.examio-main .grid.grid-cols-2 > .bg-white,
+.examio-main .grid.grid-cols-2 > div.bg-white{
+  border-radius:19px!important;
+  min-height:112px;
+}
+
+/* Dashboard lower panels */
+.examio-main .lg\:col-span-2.bg-white,
+.examio-main .lg\:col-span-2.bg-white + .bg-white,
+.examio-main .grid.grid-cols-1.lg\:grid-cols-3 > .bg-white{
+  border-radius:22px!important;
+}
+
+/* Empty states */
+.examio-main .border-dashed{
+  border-color:#a9d4d8!important;
+  background:#f6fbfc!important;
+}
+
+/* Modals */
+.examio-main .fixed.inset-0.bg-slate-900\/50{
+  background:rgba(18,49,57,.42)!important;
+  backdrop-filter:blur(7px);
+}
+.examio-main .fixed.inset-0.bg-slate-900\/50 > div{
+  border-radius:27px!important;
+  border-color:#d0e5e7!important;
+  box-shadow:0 30px 80px rgba(12,54,63,.25)!important;
+}
+
+/* Mobile spacing */
+@media(max-width:900px){
+  .examio-main{padding:20px!important}
+}
+@media(max-width:640px){
+  .examio-main{padding:14px!important}
+  .examio-main .grid{gap:12px}
+}
