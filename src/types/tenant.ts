@@ -40,3 +40,19 @@ export interface ExamTimetableEntry {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ExamAbsenteeRecord {
+  id: string;
+  examinationId: string;
+  sessionId?: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  classId: string;
+  subjectId: string;
+  studentId: string;
+  admissionNo: string;
+  studentName: string;
+  createdAt: string;
+  updatedAt: string;
+}
