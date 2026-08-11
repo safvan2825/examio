@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue, set, remove, update, get } from 'firebase/database';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Category, ClassItem, Student, Room, ExamSession, SeatingArrangement, AdminCredentials } from '../types';
+import { Category, ClassItem, Student, Room, ExamSession, SeatingArrangement, AdminCredentials, Teacher, SubjectAssignment } from '../types';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
@@ -15,16 +15,20 @@ export const campusDataPath = (path:string) => { const uid=userId(), cid=campusI
 const cache=(k:string,d:unknown)=>{try{localStorage.setItem(k,JSON.stringify(d))}catch{}};
 const cached=<T,>(k:string):T[]=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
 const clean=<T,>(x:T):T=>JSON.parse(JSON.stringify(x));
-const keys={c:'nh_categories',cl:'nh_classes',s:'nh_students',se:'nh_sessions',a:'nh_seating_arrangements',cr:'nh_credentials'};
+const keys={c:'nh_categories',cl:'nh_classes',s:'nh_students',se:'nh_sessions',a:'nh_seating_arrangements',t:'nh_teachers',sa:'nh_subject_assignments',cr:'nh_credentials'};
 const sub=<T,>(path:string,key:string,cb:(x:T[])=>void,sort?:(a:T,b:T)=>number)=>onValue(ref(db,campusDataPath(path)),s=>{const v=s.val()||{};const x=Object.values(v) as T[];if(sort)x.sort(sort);cache(key,x);cb(x)},()=>cb(cached<T>(key)));
 export const subscribeCategories=(cb:(x:Category[])=>void)=>sub('categories',keys.c,cb,(a,b)=>a.name.localeCompare(b.name));
 export const subscribeClasses=(cb:(x:ClassItem[])=>void)=>sub('classes',keys.cl,cb,(a,b)=>a.name.localeCompare(b.name));
 export const subscribeStudents=(cb:(x:Student[])=>void)=>sub('students',keys.s,cb,(a,b)=>a.admissionNo.localeCompare(b.admissionNo));
 export const subscribeSessions=(cb:(x:ExamSession[])=>void)=>sub('sessions',keys.se,cb,(a,b)=>b.date.localeCompare(a.date));
 export const subscribeSeatingArrangements=(cb:(x:SeatingArrangement[])=>void)=>sub('seatingArrangements',keys.a,cb);
+export const subscribeTeachers=(cb:(x:Teacher[])=>void)=>sub('teachers',keys.t,cb,(a,b)=>a.name.localeCompare(b.name));
+export const saveTeacher=(x:Teacher)=>save('teachers',x,keys.t);
+export const deleteTeacher=(id:string)=>del<Teacher>('teachers',id,keys.t);
+export const subscribeSubjectAssignments=(cb:(x:SubjectAssignment[])=>void)=>sub('subjectAssignments',keys.sa,cb,(a,b)=>a.id.localeCompare(b.id));
+export const saveSubjectAssignment=(x:SubjectAssignment)=>save('subjectAssignments',x,keys.sa);
 
 // Rooms belong to an examination, not to the permanent campus register.
-// Each examination therefore has its own room list and layout configuration.
 const examRoomsPath=(examId:string)=>campusDataPath(`examinations/${examId}/rooms`);
 export const subscribeExamRooms=(examId:string,cb:(x:Room[])=>void)=>onValue(ref(db,examRoomsPath(examId)),s=>{const v=s.val()||{};const x=Object.values(v) as Room[];x.sort((a,b)=>a.name.localeCompare(b.name));cb(x)},()=>cb([]));
 export const saveExamRoom=(examId:string,x:Room)=>set(ref(db,`${examRoomsPath(examId)}/${x.id}`),clean(x));
@@ -41,14 +45,11 @@ export const saveStudent=(x:Student)=>save('students',x,keys.s);export const sav
 export const saveSession=(x:ExamSession)=>save('sessions',x,keys.se);export const deleteSession=(id:string)=>del<ExamSession>('sessions',id,keys.se);export const saveSeatingArrangement=(x:SeatingArrangement)=>save('seatingArrangements',x,keys.a);
 export const subscribeAdminCredentials=(cb:(x:AdminCredentials)=>void)=>onValue(ref(db,campusDataPath('settings/credentials')),s=>{const x=s.val();cb(x?.username&&x?.password?x:DEFAULT_CREDENTIALS)},()=>cb(DEFAULT_CREDENTIALS));
 export const saveAdminCredentials=async(x:AdminCredentials)=>set(ref(db,campusDataPath('settings/credentials')),clean({...x,updatedAt:new Date().toISOString()}));
-export const exportAllDataJSON=async()=>{const paths=['categories','classes','students','sessions','seatingArrangements'];const b:any={boardName:'Noorul Huda Examination Board',version:'4.0',exportDate:new Date().toISOString()};for(const p of paths){const s=await get(ref(db,campusDataPath(p)));b[p]=Object.values(s.val()||{})}return JSON.stringify(b,null,2)};
-export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','sessions','seatingArrangements'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true;};
-export const clearAllData=async()=>{const u:Record<string,null>={};['categories','classes','students','sessions','seatingArrangements'].forEach(p=>u[campusDataPath(p)]=null);await update(ref(db),u);Object.values(keys).forEach(k=>{try{localStorage.removeItem(k)}catch{}})};
+export const exportAllDataJSON=async()=>{const paths=['categories','classes','students','sessions','seatingArrangements','teachers','subjectAssignments'];const b:any={boardName:'Noorul Huda Examination Board',version:'5.0',exportDate:new Date().toISOString()};for(const p of paths){const s=await get(ref(db,campusDataPath(p)));b[p]=Object.values(s.val()||{})}return JSON.stringify(b,null,2)};
+export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','sessions','seatingArrangements','teachers','subjectAssignments'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true;};
+export const clearAllData=async()=>{const u:Record<string,null>={};['categories','classes','students','sessions','seatingArrangements','teachers','subjectAssignments'].forEach(p=>u[campusDataPath(p)]=null);await update(ref(db),u);Object.values(keys).forEach(k=>{try{localStorage.removeItem(k)}catch{}})};
 export const seedSampleData=async()=>{};
 
-// One-time recovery of the legacy Examio database into the selected campus.
-// Permanent campus data is migrated; legacy rooms are intentionally not migrated
-// because rooms are now examination-specific.
 export const migrateLegacyDataToCampus=async(id:string)=>{
   const uid=userId();
   if(!uid) throw new Error('Not signed in.');
@@ -60,9 +61,7 @@ export const migrateLegacyDataToCampus=async(id:string)=>{
     const targetSnap=await get(ref(db,`users/${uid}/campuses/${id}/${p}`));
     const oldValue=oldSnap.val()||{};
     const targetValue=targetSnap.val()||{};
-    for(const [key,value] of Object.entries(oldValue)){
-      if(targetValue[key]===undefined) writes[`users/${uid}/campuses/${id}/${p}/${key}`]=clean(value);
-    }
+    for(const [key,value] of Object.entries(oldValue)) if(targetValue[key]===undefined) writes[`users/${uid}/campuses/${id}/${p}/${key}`]=clean(value);
   }
   if(Object.keys(writes).length) await update(ref(db),writes);
 };
