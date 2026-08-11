@@ -28,14 +28,39 @@ export default function App(){
  const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[campuses,setCampuses]=useState<Campus[]>([]),[campus,setCampus]=useState<Campus|null>(null),[exams,setExams]=useState<Examination[]>([]),[exam,setExam]=useState<Examination|null>(null),[tab,setTab]=useState<ShellTab>('dashboard'),[printRequest,setPrintRequest]=useState<PrintRequest|null>(null);
  const [categories,setCategories]=useState<Category[]>([]),[classes,setClasses]=useState<ClassItem[]>([]),[students,setStudents]=useState<Student[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[absentees,setAbsentees]=useState<AbsenteeRecord[]>([]),[examRooms,setExamRooms]=useState<Room[]>([]),[sessions,setSessions]=useState<ExamSession[]>([]),[arrangements,setArrangements]=useState<SeatingArrangement[]>([]);
  useEffect(()=>subscribeAuth(u=>{setUser(u);setReady(true)}),[]);
- useEffect(()=>{if(!user){setCampuses([]);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
- useEffect(()=>{if(!user||!campus)return;const id=getSelectedCampus();const found=campuses.find(c=>c.id===id);if(found)setCampus(found)},[user,campuses]);
+ useEffect(()=>{if(!user){setCampuses([]);setCampus(null);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
+
+ // Automatically reopen the campus that was last selected on this browser.
+ // The saved campus ID is intentionally preserved through logout/login.
+ useEffect(()=>{
+   if(!user||!campuses.length)return;
+   const savedId=getSelectedCampus();
+   if(savedId){
+     const savedCampus=campuses.find(c=>c.id===savedId);
+     if(savedCampus){
+       setCampus(prev=>prev?.id===savedCampus.id?prev:savedCampus);
+       return;
+     }
+     // The previously selected campus no longer exists.
+     clearSelectedCampus();
+   }
+   // If there is no previous selection but the account has exactly one campus,
+   // open it automatically instead of showing the campus picker.
+   if(campuses.length===1){
+     setSelectedCampus(campuses[0].id);
+     setCampus(campuses[0]);
+   }
+ },[user,campuses]);
+
  useEffect(()=>{if(!user||!campus)return;const a=dbApi.subscribeCategories(setCategories),b=dbApi.subscribeClasses(setClasses),c=dbApi.subscribeStudents(setStudents),d=attendanceApi.subscribeSubjects(setSubjects),e=attendanceApi.subscribeAbsenteeRecords(setAbsentees),f=dbApi.subscribeSessions(x=>setSessions(x.map(normSession))),g=dbApi.subscribeSeatingArrangements(x=>setArrangements(x.map(normArrangement)));return()=>{a();b();c();d();e();f();g()}},[user,campus?.id]);
  useEffect(()=>{if(!user||!campus)return;return subscribeExaminations(user.uid,campus.id,setExams)},[user,campus?.id]);
  useEffect(()=>{if(!exam){setExamRooms([]);return}return dbApi.subscribeExamRooms(exam.id,setExamRooms)},[exam?.id]);
  if(!ready)return <div className="examio-loading">Loading Examio…</div>;
  if(!user)return <AccountGate/>;
- const logout=async()=>{clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);await logoutUser()};
+
+ // Do NOT clear the saved campus on logout. This allows the next login
+ // to return directly to the campus the user was previously working on.
+ const logout=async()=>{setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);await logoutUser()};
  const selectCampus=(c:Campus|null)=>{if(!c){clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);return}setSelectedCampus(c.id);setCampus(c);setExam(null);setExamRooms([]);setPrintRequest(null);setTab('dashboard')};
  const openExam=(x:Examination)=>{setExam({...x});setPrintRequest(null);setTab('dashboard')};
  if(!campus)return <CampusHome uid={user.uid} campuses={campuses} exams={[]} selectedCampus={null} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={openExam} onSignOut={logout}/>;
