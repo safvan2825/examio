@@ -7,10 +7,10 @@ export const AppSidebarV2:React.FC<Props>=({activeTab,onTabChange,campus,onMyCam
  <div className="examio-brand"><div className="examio-brand-mark"><ShieldCheck/></div><div><strong>Examio</strong><span>Examination Management</span></div></div>
  <button className="examio-campus-switch" onClick={onMyCampuses}><span>CAMPUS</span><strong>{campus.name}</strong><small><ChevronDown/> Switch campus</small></button>
  <nav className="examio-nav">
-  <div className="examio-nav-label">WORKSPACE</div><Item active={activeTab==='dashboard'} icon={LayoutDashboard} label="Dashboard" onClick={()=>onTabChange('dashboard')}/><Item active={activeTab==='examinations'} icon={CalendarDays} label="Examinations" onClick={()=>onTabChange('examinations')}/>
-  <div className="examio-nav-label">CAMPUS DATA</div><Item active={activeTab==='classes'} icon={GraduationCap} label="Classes" onClick={()=>onTabChange('classes')}/><Item active={activeTab==='students'} icon={Users} label="Students" onClick={()=>onTabChange('students')}/><Item active={activeTab==='subjects'} icon={BookOpen} label="Subjects" onClick={()=>onTabChange('subjects')}/><Item active={activeTab==='teachers'} icon={UserRound} label="Teachers" onClick={()=>onTabChange('teachers')}/>
-  <div className="examio-nav-label">ADMIN</div><Item active={activeTab==='settings'} icon={Settings} label="Settings" onClick={()=>onTabChange('settings')}/>
+  <div className="examio-nav-label">WORKSPACE</div><Item number="01" active={activeTab==='dashboard'} icon={LayoutDashboard} label="Dashboard" onClick={()=>onTabChange('dashboard')}/><Item number="02" active={activeTab==='examinations'} icon={CalendarDays} label="Examinations" onClick={()=>onTabChange('examinations')}/>
+  <div className="examio-nav-label">CAMPUS DATA</div><Item number="03" active={activeTab==='classes'} icon={GraduationCap} label="Classes" onClick={()=>onTabChange('classes')}/><Item number="04" active={activeTab==='students'} icon={Users} label="Students" onClick={()=>onTabChange('students')}/><Item number="05" active={activeTab==='subjects'} icon={BookOpen} label="Subjects" onClick={()=>onTabChange('subjects')}/><Item number="06" active={activeTab==='teachers'} icon={UserRound} label="Teachers" onClick={()=>onTabChange('teachers')}/>
+  <div className="examio-nav-label">ADMIN</div><Item number="07" active={activeTab==='settings'} icon={Settings} label="Settings" onClick={()=>onTabChange('settings')}/>
  </nav>
- <button className="examio-signout" onClick={onLogout}><LogOut/> Sign out</button>
+ <button className="examio-signout" onClick={onLogout}><LogOut/> <span>Sign out</span></button>
  </aside>;
-const Item=({active,icon:Icon,label,onClick}:{active:boolean;icon:any;label:string;onClick:()=>void})=><button onClick={onClick} className={`examio-nav-item ${active?'active':''}`}><Icon/>{label}</button>;
+const Item=({number,active,icon:Icon,label,onClick}:{number:string;active:boolean;icon:any;label:string;onClick:()=>void})=><button onClick={onClick} className={`examio-nav-item ${active?'active':''}`}><span className="examio-nav-number">{number}</span><Icon/>{label}</button>;
