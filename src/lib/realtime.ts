@@ -1,290 +1,38 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  remove,
-  update,
-  get,
-} from 'firebase/database';
+import { getDatabase, ref, onValue, set, remove, update, get } from 'firebase/database';
 import firebaseConfig from '../../firebase-applet-config.json';
-import {
-  Category,
-  ClassItem,
-  Student,
-  Room,
-  ExamSession,
-  SeatingArrangement,
-  AdminCredentials,
-} from '../types';
+import { Category, ClassItem, Student, Room, ExamSession, SeatingArrangement, AdminCredentials } from '../types';
 
-// Examio now uses Firebase Realtime Database instead of Firestore.
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-
-const DATABASE_URL = 'https://examio-d4724-default-rtdb.asia-southeast1.firebasedatabase.app';
-const db = getDatabase(app, DATABASE_URL);
+const db = getDatabase(app, 'https://examio-d4724-default-rtdb.asia-southeast1.firebasedatabase.app');
 export { db };
-
-export const DEFAULT_CREDENTIALS: AdminCredentials = {
-  username: 'nhexam',
-  password: 'exam2026',
-};
-
-const STORAGE_KEYS = {
-  CATEGORIES: 'nh_categories',
-  CLASSES: 'nh_classes',
-  STUDENTS: 'nh_students',
-  ROOMS: 'nh_rooms',
-  SESSIONS: 'nh_sessions',
-  SEATING: 'nh_seating_arrangements',
-  CREDENTIALS: 'nh_credentials',
-};
-
-const setLocalCache = (key: string, data: unknown) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.warn('LocalStorage cache error:', e);
-  }
-};
-
-const getLocalCache = <T>(key: string): T[] => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-};
-
-const clean = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
-
-const subscribeCollection = <T>(
-  path: string,
-  cacheKey: string,
-  callback: (data: T[]) => void,
-  sortFn?: (a: T, b: T) => number
-) => {
-  const collectionRef = ref(db, path);
-  return onValue(
-    collectionRef,
-    (snapshot) => {
-      const value = snapshot.val() || {};
-      const items = Object.values(value) as T[];
-      if (sortFn) items.sort(sortFn);
-      setLocalCache(cacheKey, items);
-      callback(items);
-    },
-    (error) => {
-      console.error(`Realtime Database ${path} read error:`, error);
-      callback(getLocalCache<T>(cacheKey));
-    }
-  );
-};
-
-export const subscribeCategories = (callback: (data: Category[]) => void) =>
-  subscribeCollection<Category>(
-    'categories',
-    STORAGE_KEYS.CATEGORIES,
-    callback,
-    (a, b) => a.name.localeCompare(b.name)
-  );
-
-export const subscribeClasses = (callback: (data: ClassItem[]) => void) =>
-  subscribeCollection<ClassItem>(
-    'classes',
-    STORAGE_KEYS.CLASSES,
-    callback,
-    (a, b) => a.name.localeCompare(b.name)
-  );
-
-export const subscribeStudents = (callback: (data: Student[]) => void) =>
-  subscribeCollection<Student>(
-    'students',
-    STORAGE_KEYS.STUDENTS,
-    callback,
-    (a, b) => a.admissionNo.localeCompare(b.admissionNo)
-  );
-
-export const subscribeRooms = (callback: (data: Room[]) => void) =>
-  subscribeCollection<Room>(
-    'rooms',
-    STORAGE_KEYS.ROOMS,
-    callback,
-    (a, b) => a.name.localeCompare(b.name)
-  );
-
-export const subscribeSessions = (callback: (data: ExamSession[]) => void) =>
-  subscribeCollection<ExamSession>(
-    'sessions',
-    STORAGE_KEYS.SESSIONS,
-    callback,
-    (a, b) => b.date.localeCompare(a.date)
-  );
-
-export const subscribeSeatingArrangements = (
-  callback: (data: SeatingArrangement[]) => void
-) => subscribeCollection<SeatingArrangement>('seatingArrangements', STORAGE_KEYS.SEATING, callback);
-
-const saveItem = async <T extends { id: string }>(path: string, item: T, cacheKey: string) => {
-  await set(ref(db, `${path}/${item.id}`), clean(item));
-  const local = getLocalCache<T>(cacheKey);
-  const idx = local.findIndex((x) => x.id === item.id);
-  if (idx >= 0) local[idx] = item;
-  else local.push(item);
-  setLocalCache(cacheKey, local);
-};
-
-const deleteItem = async <T extends { id: string }>(path: string, id: string, cacheKey: string) => {
-  await remove(ref(db, `${path}/${id}`));
-  setLocalCache(cacheKey, getLocalCache<T>(cacheKey).filter((x) => x.id !== id));
-};
-
-const saveMany = async <T extends { id: string }>(path: string, items: T[], cacheKey: string) => {
-  const updates: Record<string, unknown> = {};
-  items.forEach((item) => {
-    updates[`${path}/${item.id}`] = clean(item);
-  });
-  if (Object.keys(updates).length) await update(ref(db), updates);
-
-  const map = new Map(getLocalCache<T>(cacheKey).map((x) => [x.id, x]));
-  items.forEach((x) => map.set(x.id, x));
-  setLocalCache(cacheKey, Array.from(map.values()));
-};
-
-const deleteMany = async <T>(path: string, ids: string[], cacheKey: string) => {
-  const updates: Record<string, null> = {};
-  ids.forEach((id) => {
-    updates[`${path}/${id}`] = null;
-  });
-  if (Object.keys(updates).length) await update(ref(db), updates);
-  const idsSet = new Set(ids);
-  setLocalCache(cacheKey, getLocalCache<T>(cacheKey).filter((x: any) => !idsSet.has(x.id)));
-};
-
-export const saveCategory = (cat: Category) => saveItem('categories', cat, STORAGE_KEYS.CATEGORIES);
-export const deleteCategory = (id: string) => deleteItem<Category>('categories', id, STORAGE_KEYS.CATEGORIES);
-export const deleteBulkCategories = (ids: string[]) => deleteMany<Category>('categories', ids, STORAGE_KEYS.CATEGORIES);
-
-export const saveClassItem = (cls: ClassItem) => saveItem('classes', cls, STORAGE_KEYS.CLASSES);
-export const deleteClassItem = (id: string) => deleteItem<ClassItem>('classes', id, STORAGE_KEYS.CLASSES);
-export const deleteBulkClasses = (ids: string[]) => deleteMany<ClassItem>('classes', ids, STORAGE_KEYS.CLASSES);
-export const saveBulkClasses = (classes: ClassItem[]) => saveMany('classes', classes, STORAGE_KEYS.CLASSES);
-
-export const saveStudent = (student: Student) => saveItem('students', student, STORAGE_KEYS.STUDENTS);
-export const saveBulkStudents = (students: Student[]) => saveMany('students', students, STORAGE_KEYS.STUDENTS);
-export const deleteStudent = (id: string) => deleteItem<Student>('students', id, STORAGE_KEYS.STUDENTS);
-export const deleteBulkStudents = (ids: string[]) => deleteMany<Student>('students', ids, STORAGE_KEYS.STUDENTS);
-
-export const saveRoom = (room: Room) => saveItem('rooms', room, STORAGE_KEYS.ROOMS);
-export const deleteRoom = (id: string) => deleteItem<Room>('rooms', id, STORAGE_KEYS.ROOMS);
-export const deleteBulkRooms = (ids: string[]) => deleteMany<Room>('rooms', ids, STORAGE_KEYS.ROOMS);
-
-export const saveSession = (sess: ExamSession) => saveItem('sessions', sess, STORAGE_KEYS.SESSIONS);
-export const deleteSession = (id: string) => deleteItem<ExamSession>('sessions', id, STORAGE_KEYS.SESSIONS);
-
-export const saveSeatingArrangement = (arr: SeatingArrangement) =>
-  saveItem('seatingArrangements', arr, STORAGE_KEYS.SEATING);
-
-export const subscribeAdminCredentials = (callback: (creds: AdminCredentials) => void) => {
-  const credentialsRef = ref(db, 'settings/credentials');
-  return onValue(
-    credentialsRef,
-    (snapshot) => {
-      const data = snapshot.val() as AdminCredentials | null;
-      if (data?.username && data?.password) {
-        setLocalCache(STORAGE_KEYS.CREDENTIALS, data);
-        callback(data);
-      } else {
-        callback(DEFAULT_CREDENTIALS);
-      }
-    },
-    (error) => {
-      console.error('Realtime Database credentials read error:', error);
-      try {
-        const raw = localStorage.getItem(STORAGE_KEYS.CREDENTIALS);
-        const cached = raw ? JSON.parse(raw) : null;
-        callback(cached?.username && cached?.password ? cached : DEFAULT_CREDENTIALS);
-      } catch {
-        callback(DEFAULT_CREDENTIALS);
-      }
-    }
-  );
-};
-
-export const saveAdminCredentials = async (creds: AdminCredentials) => {
-  const cleanCreds = clean({ ...creds, updatedAt: new Date().toISOString() });
-  await set(ref(db, 'settings/credentials'), cleanCreds);
-  setLocalCache(STORAGE_KEYS.CREDENTIALS, cleanCreds);
-};
-
-export const exportAllDataJSON = async () => {
-  const paths = ['categories', 'classes', 'students', 'rooms', 'sessions', 'seatingArrangements'];
-  const backup: Record<string, unknown> = {
-    boardName: 'Noorul Huda Examination Board',
-    version: '2.0',
-    exportDate: new Date().toISOString(),
-  };
-
-  for (const path of paths) {
-    const snapshot = await get(ref(db, path));
-    const value = snapshot.val() || {};
-    backup[path] = Object.values(value);
-  }
-
-  return JSON.stringify(backup, null, 2);
-};
-
-export const importAllDataJSON = async (jsonString: string) => {
-  const data = JSON.parse(jsonString);
-  if (!data.categories || !data.classes || !data.students || !data.rooms) {
-    throw new Error('Invalid backup file structure.');
-  }
-
-  const updates: Record<string, unknown> = {};
-  const collections = ['categories', 'classes', 'students', 'rooms', 'sessions', 'seatingArrangements'];
-  collections.forEach((collectionName) => {
-    (data[collectionName] || []).forEach((item: { id: string }) => {
-      updates[`${collectionName}/${item.id}`] = clean(item);
-    });
-  });
-
-  if (Object.keys(updates).length) await update(ref(db), updates);
-  return true;
-};
-
-export const clearAllData = async () => {
-  const updates: Record<string, null> = {};
-  ['categories', 'classes', 'students', 'rooms', 'sessions', 'seatingArrangements'].forEach((path) => {
-    updates[path] = null;
-  });
-  await update(ref(db), updates);
-
-  Object.values(STORAGE_KEYS).forEach((key) => {
-    try { localStorage.removeItem(key); } catch {}
-  });
-};
-
-// Small, optional demo seed. Real exam data is never created automatically.
-export const seedSampleData = async () => {
-  const now = new Date().toISOString();
-  const categories: Category[] = [
-    { id: 'cat-sec', name: 'Secondary', description: 'Classes 8th to 10th Standard', createdAt: now },
-    { id: 'cat-srsec', name: 'Senior Secondary', description: 'Classes 11th & 12th Plus Two', createdAt: now },
-    { id: 'cat-deg', name: 'Degree', description: 'Undergraduate Degree Courses', createdAt: now },
-  ];
-
-  const classes: ClassItem[] = [
-    { id: 'cls-sec-s1', name: 'S1 (Class 8)', categoryId: 'cat-sec', createdAt: now },
-    { id: 'cls-sec-s2', name: 'S2 (Class 9)', categoryId: 'cat-sec', createdAt: now },
-    { id: 'cls-sec-s3', name: 'S3 (Class 10)', categoryId: 'cat-sec', createdAt: now },
-    { id: 'cls-srsec-ss1', name: 'SS1 (Plus One)', categoryId: 'cat-srsec', createdAt: now },
-    { id: 'cls-srsec-ss2', name: 'SS2 (Plus Two)', categoryId: 'cat-srsec', createdAt: now },
-    { id: 'cls-deg-deg1', name: 'DEG1 (First Year)', categoryId: 'cat-deg', createdAt: now },
-    { id: 'cls-deg-deg2', name: 'DEG2 (Second Year)', categoryId: 'cat-deg', createdAt: now },
-  ];
-
-  await saveMany('categories', categories, STORAGE_KEYS.CATEGORIES);
-  await saveMany('classes', classes, STORAGE_KEYS.CLASSES);
-};
+export const DEFAULT_CREDENTIALS: AdminCredentials = { username: 'nhexam', password: 'exam2026' };
+const campusId = () => localStorage.getItem('examio_campus_id') || '';
+export const campusDataPath = (path:string) => campusId() ? `campuses/${campusId()}/${path}` : path;
+const cache=(k:string,d:unknown)=>{try{localStorage.setItem(k,JSON.stringify(d))}catch{}};
+const cached=<T,>(k:string):T[]=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
+const clean=<T,>(x:T):T=>JSON.parse(JSON.stringify(x));
+const keys={c:'nh_categories',cl:'nh_classes',s:'nh_students',r:'nh_rooms',se:'nh_sessions',a:'nh_seating_arrangements',cr:'nh_credentials'};
+const sub=<T,>(path:string,key:string,cb:(x:T[])=>void,sort?:(a:T,b:T)=>number)=>onValue(ref(db,campusDataPath(path)),s=>{const v=s.val()||{};const x=Object.values(v) as T[];if(sort)x.sort(sort);cache(key,x);cb(x)},()=>cb(cached<T>(key)));
+export const subscribeCategories=(cb:(x:Category[])=>void)=>sub('categories',keys.c,cb,(a,b)=>a.name.localeCompare(b.name));
+export const subscribeClasses=(cb:(x:ClassItem[])=>void)=>sub('classes',keys.cl,cb,(a,b)=>a.name.localeCompare(b.name));
+export const subscribeStudents=(cb:(x:Student[])=>void)=>sub('students',keys.s,cb,(a,b)=>a.admissionNo.localeCompare(b.admissionNo));
+export const subscribeRooms=(cb:(x:Room[])=>void)=>sub('rooms',keys.r,cb,(a,b)=>a.name.localeCompare(b.name));
+export const subscribeSessions=(cb:(x:ExamSession[])=>void)=>sub('sessions',keys.se,cb,(a,b)=>b.date.localeCompare(a.date));
+export const subscribeSeatingArrangements=(cb:(x:SeatingArrangement[])=>void)=>sub('seatingArrangements',keys.a,cb);
+const save=async<T extends{id:string}>(p:string,x:T,k:string)=>{await set(ref(db,campusDataPath(`${p}/${x.id}`)),clean(x));const a=cached<T>(k);const i=a.findIndex(v=>v.id===x.id);i>=0?a[i]=x:a.push(x);cache(k,a)};
+const del=async<T extends{id:string}>(p:string,id:string,k:string)=>{await remove(ref(db,campusDataPath(`${p}/${id}`)));cache(k,cached<T>(k).filter(x=>x.id!==id))};
+const bulk=async<T extends{id:string}>(p:string,xs:T[],k:string)=>{const u:Record<string,unknown>={};xs.forEach(x=>u[campusDataPath(`${p}/${x.id}`)]=clean(x));if(Object.keys(u).length)await update(ref(db),u);cache(k,xs)};
+const bulkDel=async(p:string,ids:string[],k:string)=>{const u:Record<string,null>={};ids.forEach(id=>u[campusDataPath(`${p}/${id}`)]=null);if(Object.keys(u).length)await update(ref(db),u);const q=new Set(ids);cache(k,cached<any>(k).filter(x=>!q.has(x.id)))};
+export const saveCategory=(x:Category)=>save('categories',x,keys.c);export const deleteCategory=(id:string)=>del<Category>('categories',id,keys.c);export const deleteBulkCategories=(ids:string[])=>bulkDel('categories',ids,keys.c);
+export const saveClassItem=(x:ClassItem)=>save('classes',x,keys.cl);export const saveBulkClasses=(x:ClassItem[])=>bulk('classes',x,keys.cl);export const deleteClassItem=(id:string)=>del<ClassItem>('classes',id,keys.cl);export const deleteBulkClasses=(ids:string[])=>bulkDel('classes',ids,keys.cl);
+export const saveStudent=(x:Student)=>save('students',x,keys.s);export const saveBulkStudents=(x:Student[])=>bulk('students',x,keys.s);export const deleteStudent=(id:string)=>del<Student>('students',id,keys.s);export const deleteBulkStudents=(ids:string[])=>bulkDel('students',ids,keys.s);
+export const saveRoom=(x:Room)=>save('rooms',x,keys.r);export const deleteRoom=(id:string)=>del<Room>('rooms',id,keys.r);export const deleteBulkRooms=(ids:string[])=>bulkDel('rooms',ids,keys.r);
+export const saveSession=(x:ExamSession)=>save('sessions',x,keys.se);export const deleteSession=(id:string)=>del<ExamSession>('sessions',id,keys.se);export const saveSeatingArrangement=(x:SeatingArrangement)=>save('seatingArrangements',x,keys.a);
+export const subscribeAdminCredentials=(cb:(x:AdminCredentials)=>void)=>onValue(ref(db,campusDataPath('settings/credentials')),s=>{const x=s.val();cb(x?.username&&x?.password?x:DEFAULT_CREDENTIALS)},()=>cb(DEFAULT_CREDENTIALS));
+export const saveAdminCredentials=async(x:AdminCredentials)=>set(ref(db,campusDataPath('settings/credentials')),clean({...x,updatedAt:new Date().toISOString()}));
+export const exportAllDataJSON=async()=>{const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const b:any={boardName:'Noorul Huda Examination Board',version:'3.0',exportDate:new Date().toISOString()};for(const p of paths){const s=await get(ref(db,campusDataPath(p)));b[p]=Object.values(s.val()||{})}return JSON.stringify(b,null,2)};
+export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students||!d.rooms)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','rooms','sessions','seatingArrangements'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true};
+export const clearAllData=async()=>{const u:Record<string,null>={};['categories','classes','students','rooms','sessions','seatingArrangements'].forEach(p=>u[campusDataPath(p)]=null);await update(ref(db),u);Object.values(keys).forEach(k=>{try{localStorage.removeItem(k)}catch{}})};
+export const seedSampleData=async()=>{};
+export const migrateLegacyDataToCampus=async(id:string)=>{const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const u:Record<string,unknown>={};for(const p of paths){const old=await get(ref(db,p));const target=await get(ref(db,`campuses/${id}/${p}`));if(old.exists()&&!target.exists())Object.entries(old.val()||{}).forEach(([k,v])=>u[`campuses/${id}/${p}/${k}`]=v)}if(Object.keys(u).length)await update(ref(db),u)};
