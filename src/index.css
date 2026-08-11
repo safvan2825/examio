@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#15333b;background:#eef8fa;font-synthesis:none;text-rendering:optimizeLegibility}
+*{box-sizing:border-box}
+body{margin:0;min-width:320px;background:linear-gradient(135deg,#edf9fb 0%,#f7fbfc 48%,#e8f5f7 100%)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.examio-loading{min-height:100vh;display:grid;place-items:center;background:#eaf7f9;color:#12343c;font-weight:800}
+.examio-app{min-height:100vh;display:flex;background:linear-gradient(135deg,#edf9fb,#f9fcfd)}
+.examio-main{flex:1;min-width:0;padding:30px;overflow:auto}
+.examio-workspace-shell{min-height:100vh;padding:34px;background:linear-gradient(135deg,#edf9fb,#f8fcfd)}
+.examio-page{max-width:1180px;margin:0 auto}
+.examio-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:8px 4px 26px}
+.examio-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:#1999a5;margin-bottom:7px}
+.examio-hero h1{margin:0;font-size:36px;line-height:1.05;letter-spacing:-.035em;color:#102f38}
+.examio-hero p{margin:9px 0 0;color:#6b858b;font-size:14px}
+.examio-primary{border:0;border-radius:14px;background:linear-gradient(135deg,#18b9c5,#1599aa);color:white;font-weight:850;padding:12px 17px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(21,153,170,.22);transition:.18s transform,.18s box-shadow}
+.examio-primary:hover{transform:translateY(-1px);box-shadow:0 13px 28px rgba(21,153,170,.28)}
+.examio-primary svg{width:17px;height:17px}
+.examio-statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}
+.examio-statrow>div{background:rgba(255,255,255,.82);border:1px solid rgba(128,190,198,.24);border-radius:20px;padding:17px 19px;box-shadow:0 10px 30px rgba(39,93,104,.06);backdrop-filter:blur(10px)}
+.examio-statrow span{display:block;font-size:9px;letter-spacing:.13em;font-weight:900;color:#7d969b}
+.examio-statrow strong{display:block;margin-top:7px;font-size:18px;color:#153b44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.examio-section-title{margin-bottom:14px}.examio-section-title h2{margin:0;color:#15343c;font-size:20px}.examio-section-title p{margin:4px 0;color:#789096;font-size:12px}
+.examio-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.examio-exam-card{position:relative;text-align:left;border:1px solid rgba(112,181,191,.2);border-radius:23px;background:rgba(255,255,255,.9);padding:20px;min-height:235px;box-shadow:0 12px 35px rgba(40,88,100,.07);transition:.2s transform,.2s box-shadow,.2s border-color;overflow:hidden}
+.examio-exam-card:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#f4b5d4,#9adfe5,#72cfd6)}
+.examio-exam-card:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(40,88,100,.13);border-color:#8fd4da}
+.examio-icon{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,#d7f4f3,#bfe9ed);display:grid;place-items:center;color:#128f9c;margin-bottom:13px}.examio-icon svg{width:25px}
+.examio-card-top{position:absolute;top:20px;right:18px;display:flex;align-items:center;gap:8px}.examio-card-top span{font-size:9px;text-transform:uppercase;font-weight:900;color:#399ba3;background:#e7f7f6;border-radius:999px;padding:5px 8px}.examio-card-top svg{width:15px;color:#9bb2b6}
+.examio-exam-card h3{margin:0;font-size:18px;color:#183b43;letter-spacing:-.02em}.examio-exam-card p{margin:5px 0 15px;font-size:11px;color:#82979c}.examio-card-meta{display:flex;align-items:center;gap:7px;color:#52767d;font-size:10px;font-weight:800}.examio-card-meta span{display:flex;align-items:center;gap:4px}.examio-card-meta svg{width:12px}.examio-card-footer{position:absolute;bottom:18px;left:20px;display:flex;align-items:center;gap:5px;font-size:10px;color:#94a8ac;font-weight:800}.examio-card-footer svg{width:13px}
+.examio-empty{grid-column:1/-1;text-align:center;padding:65px 20px;background:rgba(255,255,255,.75);border:1px dashed #a9d4d8;border-radius:24px}.examio-empty>svg{width:38px;height:38px;color:#69bfc7;margin:0 auto 12px}.examio-empty h3{margin:0;color:#26474e}.examio-empty p{margin:5px 0 17px;color:#7b9398;font-size:12px}.examio-empty .examio-primary{margin:auto}
+.examio-modal{position:fixed;inset:0;z-index:100;background:rgba(18,49,57,.42);display:grid;place-items:center;padding:20px;backdrop-filter:blur(7px)}.examio-modal-card{width:min(620px,100%);max-height:90vh;overflow:auto;background:#fbffff;border:1px solid rgba(255,255,255,.8);border-radius:27px;padding:25px;box-shadow:0 30px 80px rgba(12,54,63,.25)}.examio-modal-head{display:flex;justify-content:space-between;align-items:flex-start}.examio-modal-head h2{margin:0;color:#143740;font-size:24px}.examio-modal-head>button{border:0;background:#edf7f8;border-radius:11px;padding:8px;color:#4c7379}.examio-error{margin-top:15px;background:#fff0f2;color:#b23c52;border:1px solid #ffd0d7;border-radius:13px;padding:11px;font-size:12px;font-weight:700}.examio-form{display:grid;gap:14px;margin-top:20px}.examio-form label{font-size:11px;font-weight:900;color:#45656b}.examio-form input,.examio-form textarea{display:block;width:100%;margin-top:6px;border:1px solid #cce0e3;background:white;border-radius:13px;padding:11px 13px;outline:none;color:#193c44}.examio-form input:focus,.examio-form textarea:focus{border-color:#58bfc8;box-shadow:0 0 0 3px rgba(88,191,200,.13)}.examio-two{display:grid;grid-template-columns:1fr 1fr;gap:13px}.examio-submit{width:100%;margin-top:3px}
+@media(max-width:900px){.examio-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.examio-statrow{grid-template-columns:1fr}.examio-main{padding:20px}}
+@media(max-width:650px){.examio-hero{align-items:flex-start;flex-direction:column}.examio-hero h1{font-size:29px}.examio-grid{grid-template-columns:1fr}.examio-two{grid-template-columns:1fr}.examio-workspace-shell{padding:16px}}
