@@ -1,4 +1,4 @@
-# Netlify deployment configuration
+# Netlify deployment configuration — production redeploy trigger
 [build]
   command = "npm run build"
   publish = "dist"
