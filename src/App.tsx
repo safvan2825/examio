@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {User} from 'firebase/auth';
 import {subscribeAuth,logoutUser} from './lib/auth';
-import {subscribeCampuses,setSelectedCampus,getSelectedCampus,clearSelectedCampus,subscribeExaminations,migrateLegacyDataToCampus} from './lib/tenant';
+import {subscribeCampuses,setSelectedCampus,getSelectedCampus,clearSelectedCampus,subscribeExaminations} from './lib/tenant';
 import * as dbApi from './lib/realtime';
 import * as attendanceApi from './lib/attendance';
 import {AccountGate} from './components/AccountGate';
@@ -29,7 +29,6 @@ export default function App(){
  useEffect(()=>subscribeAuth(u=>{setUser(u);setReady(true)}),[]);
  useEffect(()=>{if(!user){setCampuses([]);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
  useEffect(()=>{if(!user)return;const id=getSelectedCampus();const found=campuses.find(c=>c.id===id);if(found)setCampus(found)},[user,campuses]);
- useEffect(()=>{if(!user||!campus)return;let active=true;(async()=>{try{await migrateLegacyDataToCampus(campus.id)}catch(e){console.warn('Legacy data migration skipped',e)}if(active)setSelectedCampus(campus.id)})();return()=>{active=false}},[user,campus?.id]);
  useEffect(()=>{if(!user||!campus)return;const a=dbApi.subscribeCategories(setCategories),b=dbApi.subscribeClasses(setClasses),c=dbApi.subscribeStudents(setStudents),d=dbApi.subscribeRooms(x=>setRooms(x.map(normRoom))),e=attendanceApi.subscribeSubjects(setSubjects),f=attendanceApi.subscribeAbsenteeRecords(setAbsentees),g=dbApi.subscribeSessions(x=>setSessions(x.map(normSession))),h=dbApi.subscribeSeatingArrangements(x=>setArrangements(x.map(normArrangement)));return()=>{a();b();c();d();e();f();g();h()}},[user,campus?.id]);
  useEffect(()=>{if(!user||!campus)return;return subscribeExaminations(user.uid,campus.id,setExams)},[user,campus?.id]);
  if(!ready)return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white text-sm">Loading Examio…</div>;
