@@ -5,19 +5,13 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
-        "campuses": {
-          "$campusId": {
-            ".read": "auth != null && auth.uid === $uid",
-            ".write": "auth != null && auth.uid === $uid"
-          }
-        }
+        ".write": "auth != null && auth.uid === $uid"
       }
     },
     "campuses": {
       "$campusId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null && data.child('ownerId').val() === auth.uid",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid) || data.child('ownerId').val() === auth.uid)"
       }
     }
   }
