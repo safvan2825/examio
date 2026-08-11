@@ -8,7 +8,7 @@ import {AccountGate} from './components/AccountGate';
 import {CampusHome} from './components/CampusHome';
 import {ExaminationWorkspace} from './components/ExaminationWorkspace';
 import {ExaminationsView} from './components/ExaminationsView';
-import {AppSidebar,ShellTab} from './components/AppSidebar';
+import {AppSidebarV2,ShellTab} from './components/AppSidebarV2';
 import {DashboardView} from './components/DashboardView';
 import {CategoriesView} from './components/CategoriesView';
 import {ClassesView} from './components/ClassesView';
@@ -37,10 +37,10 @@ export default function App(){
  if(!user)return <AccountGate/>;
  const logout=async()=>{clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);await logoutUser()};
  const selectCampus=(c:Campus|null)=>{if(!c){clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);return}setSelectedCampus(c.id);setCampus(c);setExam(null);setExamRooms([]);setPrintRequest(null);setTab('dashboard')};
- const openExam=(x:Examination)=>{setExam({...x});setPrintRequest(null);setTab('dashboard' as ShellTab)};
+ const openExam=(x:Examination)=>{setExam({...x});setPrintRequest(null);setTab('dashboard')};
  if(!campus)return <CampusHome uid={user.uid} campuses={campuses} exams={[]} selectedCampus={null} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={openExam} onSignOut={logout}/>;
  if(exam)return <div className="examio-workspace-shell"><ExaminationWorkspace uid={user.uid} campus={campus} exam={exam} categories={categories} classes={classes} subjects={subjects} students={students} rooms={examRooms} arrangements={arrangements} onSaveRoom={(room)=>dbApi.saveExamRoom(exam.id,room)} onDeleteRoom={(id)=>dbApi.deleteExamRoom(exam.id,id)} onDeleteBulkRooms={(ids)=>dbApi.deleteBulkExamRooms(exam.id,ids)} onSaveArrangement={dbApi.saveSeatingArrangement} onOpenPrintModal={(type,session,arrangement)=>setPrintRequest({type,session,arrangement})} onBack={()=>{setExam(null);setExamRooms([])}}/>{printRequest&&<PrintModalView type={printRequest.type} session={printRequest.session} arrangement={printRequest.arrangement} categories={categories} classes={classes} onClose={()=>setPrintRequest(null)}/>}</div>;
- return <div className="examio-app"><AppSidebar activeTab={tab} onTabChange={setTab} campus={campus} campuses={campuses} onCampusChange={selectCampus} onMyCampuses={()=>selectCampus(null)} onLogout={logout}/><main className="examio-main">
+ return <div className="examio-app"><AppSidebarV2 activeTab={tab} onTabChange={setTab} campus={campus} campuses={campuses} onCampusChange={selectCampus} onMyCampuses={()=>selectCampus(null)} onLogout={logout}/><main className="examio-main">
   {tab==='dashboard'&&<DashboardView categories={categories} classes={classes} students={students} sessions={sessions} subjects={subjects} absenteeRecords={absentees} onNavigate={()=>setTab('examinations')} onSelectSessionForGenerator={()=>setTab('examinations')}/>}
   {tab==='categories'&&<CategoriesView categories={categories} classes={classes} rooms={[]} onSaveCategory={dbApi.saveCategory} onDeleteCategory={dbApi.deleteCategory} onDeleteBulkCategories={dbApi.deleteBulkCategories}/>}
   {tab==='classes'&&<ClassesView categories={categories} classes={classes} students={students} onSaveClassItem={dbApi.saveClassItem} onSaveBulkClasses={dbApi.saveBulkClasses} onDeleteClassItem={dbApi.deleteClassItem} onDeleteBulkClasses={dbApi.deleteBulkClasses}/>}
