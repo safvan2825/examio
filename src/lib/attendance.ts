@@ -1,40 +1,11 @@
 import { onValue, ref, remove, set, update } from 'firebase/database';
-import { db } from './realtime';
+import { db, campusDataPath } from './realtime';
 import { AbsenteeRecord, Subject } from '../types';
 
-export const subscribeSubjects = (callback: (data: Subject[]) => void) =>
-  onValue(ref(db, 'subjects'), (snapshot) => {
-    const value = snapshot.val() || {};
-    const items = Object.values(value) as Subject[];
-    items.sort((a, b) => a.name.localeCompare(b.name));
-    callback(items);
-  }, (error) => {
-    console.error('Subjects read error:', error);
-    callback([]);
-  });
-
-export const saveSubject = async (subject: Subject) => set(ref(db, `subjects/${subject.id}`), subject);
-export const deleteSubject = async (id: string) => remove(ref(db, `subjects/${id}`));
-
-export const subscribeAbsenteeRecords = (callback: (data: AbsenteeRecord[]) => void) =>
-  onValue(ref(db, 'absenteeRecords'), (snapshot) => {
-    const value = snapshot.val() || {};
-    const items = Object.values(value) as AbsenteeRecord[];
-    items.sort((a, b) => `${b.date}-${b.createdAt}`.localeCompare(`${a.date}-${a.createdAt}`));
-    callback(items);
-  }, (error) => {
-    console.error('Absentee records read error:', error);
-    callback([]);
-  });
-
-export const saveAbsenteeRecords = async (records: AbsenteeRecord[]) => {
-  if (!records.length) return;
-  const updates: Record<string, unknown> = {};
-  records.forEach((record) => { updates[`absenteeRecords/${record.id}`] = record; });
-  await update(ref(db), updates);
-};
-
-export const saveAbsenteeRecord = async (record: AbsenteeRecord) =>
-  set(ref(db, `absenteeRecords/${record.id}`), record);
-
-export const deleteAbsenteeRecord = async (id: string) => remove(ref(db, `absenteeRecords/${id}`));
+export const subscribeSubjects=(cb:(x:Subject[])=>void)=>onValue(ref(db,campusDataPath('subjects')),s=>{const x=Object.values(s.val()||{}) as Subject[];x.sort((a,b)=>a.name.localeCompare(b.name));cb(x)},()=>cb([]));
+export const saveSubject=(x:Subject)=>set(ref(db,campusDataPath(`subjects/${x.id}`)),x);
+export const deleteSubject=(id:string)=>remove(ref(db,campusDataPath(`subjects/${id}`)));
+export const subscribeAbsenteeRecords=(cb:(x:AbsenteeRecord[])=>void)=>onValue(ref(db,campusDataPath('absenteeRecords')),s=>{const x=Object.values(s.val()||{}) as AbsenteeRecord[];x.sort((a,b)=>`${b.date}-${b.createdAt}`.localeCompare(`${a.date}-${a.createdAt}`));cb(x)},()=>cb([]));
+export const saveAbsenteeRecords=async(xs:AbsenteeRecord[])=>{const u:Record<string,unknown>={};xs.forEach(x=>u[campusDataPath(`absenteeRecords/${x.id}`)]=x);if(Object.keys(u).length)await update(ref(db),u)};
+export const saveAbsenteeRecord=(x:AbsenteeRecord)=>set(ref(db,campusDataPath(`absenteeRecords/${x.id}`)),x);
+export const deleteAbsenteeRecord=(id:string)=>remove(ref(db,campusDataPath(`absenteeRecords/${id}`)));
