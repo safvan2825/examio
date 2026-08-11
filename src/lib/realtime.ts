@@ -30,12 +30,30 @@ const bulkDel=async(p:string,ids:string[],k:string)=>{const u:Record<string,null
 export const saveCategory=(x:Category)=>save('categories',x,keys.c);export const deleteCategory=(id:string)=>del<Category>('categories',id,keys.c);export const deleteBulkCategories=(ids:string[])=>bulkDel('categories',ids,keys.c);
 export const saveClassItem=(x:ClassItem)=>save('classes',x,keys.cl);export const saveBulkClasses=(x:ClassItem[])=>bulk('classes',x,keys.cl);export const deleteClassItem=(id:string)=>del<ClassItem>('classes',id,keys.cl);export const deleteBulkClasses=(ids:string[])=>bulkDel('classes',ids,keys.cl);
 export const saveStudent=(x:Student)=>save('students',x,keys.s);export const saveBulkStudents=(x:Student[])=>bulk('students',x,keys.s);export const deleteStudent=(id:string)=>del<Student>('students',id,keys.s);export const deleteBulkStudents=(ids:string[])=>bulkDel('students',ids,keys.s);
-export const saveRoom=(x:Room)=>save('rooms',x,keys.r);export const deleteRoom=(id:string)=>del<Room>('rooms',id,keys.r);export const deleteBulkRooms=(ids:string[])=>bulkDel('rooms',ids,keys.r);
-export const saveSession=(x:ExamSession)=>save('sessions',x,keys.se);export const deleteSession=(id:string)=>del<ExamSession>('sessions',id,keys.se);export const saveSeatingArrangement=(x:SeatingArrangement)=>save('seatingArrangements',x,keys.a);
+export const saveRoom=(x:Room)=>save('rooms',x,keys.r);export const deleteRoom=(id:string)=>del<Room>('rooms',id,keys.r);export const saveSession=(x:ExamSession)=>save('sessions',x,keys.se);export const deleteSession=(id:string)=>del<ExamSession>('sessions',id,keys.se);export const saveSeatingArrangement=(x:SeatingArrangement)=>save('seatingArrangements',x,keys.a);
 export const subscribeAdminCredentials=(cb:(x:AdminCredentials)=>void)=>onValue(ref(db,campusDataPath('settings/credentials')),s=>{const x=s.val();cb(x?.username&&x?.password?x:DEFAULT_CREDENTIALS)},()=>cb(DEFAULT_CREDENTIALS));
 export const saveAdminCredentials=async(x:AdminCredentials)=>set(ref(db,campusDataPath('settings/credentials')),clean({...x,updatedAt:new Date().toISOString()}));
 export const exportAllDataJSON=async()=>{const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const b:any={boardName:'Noorul Huda Examination Board',version:'3.0',exportDate:new Date().toISOString()};for(const p of paths){const s=await get(ref(db,campusDataPath(p)));b[p]=Object.values(s.val()||{})}return JSON.stringify(b,null,2)};
-export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students||!d.rooms)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','rooms','sessions','seatingArrangements'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true};
+export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students||!d.rooms)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','rooms','sessions','seatingArrangements'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true;};
 export const clearAllData=async()=>{const u:Record<string,null>={};['categories','classes','students','rooms','sessions','seatingArrangements'].forEach(p=>u[campusDataPath(p)]=null);await update(ref(db),u);Object.values(keys).forEach(k=>{try{localStorage.removeItem(k)}catch{}})};
 export const seedSampleData=async()=>{};
-export const migrateLegacyDataToCampus=async(id:string)=>{const uid=userId();if(!uid)throw new Error('Not signed in.');const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const u:Record<string,unknown>={};for(const p of paths){const old=await get(ref(db,p));const target=await get(ref(db,`users/${uid}/campuses/${id}/${p}`));if(old.exists()&&!target.exists())Object.entries(old.val()||{}).forEach(([k,v])=>u[`users/${uid}/campuses/${id}/${p}/${k}`]=v)}if(Object.keys(u).length)await update(ref(db),u)};
+
+// One-time recovery of the legacy Examio database into the selected campus.
+// Existing campus data is never overwritten; only missing records are copied.
+export const migrateLegacyDataToCampus=async(id:string)=>{
+  const uid=userId();
+  if(!uid) throw new Error('Not signed in.');
+  const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];
+  const writes:Record<string,unknown>={};
+  for(const p of paths){
+    const oldSnap=await get(ref(db,p));
+    if(!oldSnap.exists()) continue;
+    const targetSnap=await get(ref(db,`users/${uid}/campuses/${id}/${p}`));
+    const oldValue=oldSnap.val()||{};
+    const targetValue=targetSnap.val()||{};
+    for(const [key,value] of Object.entries(oldValue)){
+      if(targetValue[key]===undefined) writes[`users/${uid}/campuses/${id}/${p}/${key}`]=clean(value);
+    }
+  }
+  if(Object.keys(writes).length) await update(ref(db),writes);
+};
