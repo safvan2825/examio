@@ -1,14 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue, set, remove, update, get } from 'firebase/database';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Category, ClassItem, Student, Room, ExamSession, SeatingArrangement, AdminCredentials } from '../types';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
 const db = getDatabase(app, 'https://examio-d4724-default-rtdb.asia-southeast1.firebasedatabase.app');
 export { db };
 export const DEFAULT_CREDENTIALS: AdminCredentials = { username: 'nhexam', password: 'exam2026' };
 const campusId = () => localStorage.getItem('examio_campus_id') || '';
-export const campusDataPath = (path:string) => campusId() ? `campuses/${campusId()}/${path}` : path;
+const userId = () => auth.currentUser?.uid || '';
+export const campusDataPath = (path:string) => { const uid=userId(), cid=campusId(); if(!uid||!cid) throw new Error('No authenticated user or selected campus.'); return `users/${uid}/campuses/${cid}/${path}`; };
 const cache=(k:string,d:unknown)=>{try{localStorage.setItem(k,JSON.stringify(d))}catch{}};
 const cached=<T,>(k:string):T[]=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}};
 const clean=<T,>(x:T):T=>JSON.parse(JSON.stringify(x));
@@ -35,4 +38,4 @@ export const exportAllDataJSON=async()=>{const paths=['categories','classes','st
 export const importAllDataJSON=async(j:string)=>{const d=JSON.parse(j);if(!d.categories||!d.classes||!d.students||!d.rooms)throw Error('Invalid backup file structure.');const u:Record<string,unknown>={};for(const p of ['categories','classes','students','rooms','sessions','seatingArrangements'])for(const x of d[p]||[])u[campusDataPath(`${p}/${x.id}`)]=clean(x);if(Object.keys(u).length)await update(ref(db),u);return true};
 export const clearAllData=async()=>{const u:Record<string,null>={};['categories','classes','students','rooms','sessions','seatingArrangements'].forEach(p=>u[campusDataPath(p)]=null);await update(ref(db),u);Object.values(keys).forEach(k=>{try{localStorage.removeItem(k)}catch{}})};
 export const seedSampleData=async()=>{};
-export const migrateLegacyDataToCampus=async(id:string)=>{const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const u:Record<string,unknown>={};for(const p of paths){const old=await get(ref(db,p));const target=await get(ref(db,`campuses/${id}/${p}`));if(old.exists()&&!target.exists())Object.entries(old.val()||{}).forEach(([k,v])=>u[`campuses/${id}/${p}/${k}`]=v)}if(Object.keys(u).length)await update(ref(db),u)};
+export const migrateLegacyDataToCampus=async(id:string)=>{const uid=userId();if(!uid)throw new Error('Not signed in.');const paths=['categories','classes','students','rooms','sessions','seatingArrangements'];const u:Record<string,unknown>={};for(const p of paths){const old=await get(ref(db,p));const target=await get(ref(db,`users/${uid}/campuses/${id}/${p}`));if(old.exists()&&!target.exists())Object.entries(old.val()||{}).forEach(([k,v])=>u[`users/${uid}/campuses/${id}/${p}/${k}`]=v)}if(Object.keys(u).length)await update(ref(db),u)};
