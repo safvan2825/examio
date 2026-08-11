@@ -5,6 +5,8 @@ export interface ClassItem { id: string; name: string; categoryId: string; creat
 export interface Student { id: string; admissionNo: string; name: string; classId: string; createdAt: string; }
 
 export interface Subject { id: string; name: string; createdAt: string; updatedAt?: string; }
+export interface Teacher { id: string; name: string; createdAt: string; updatedAt?: string; }
+export interface SubjectAssignment { id: string; classId: string; subjectId: string; teacherId: string; createdAt: string; updatedAt?: string; }
 export interface AbsenteeRecord {
   id: string; studentId: string; admissionNo: string; studentName: string;
   classId: string; className: string; subjectId: string; subjectName: string;
