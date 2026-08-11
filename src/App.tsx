@@ -29,59 +29,24 @@ export default function App(){
  const [categories,setCategories]=useState<Category[]>([]),[classes,setClasses]=useState<ClassItem[]>([]),[students,setStudents]=useState<Student[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[absentees,setAbsentees]=useState<AbsenteeRecord[]>([]),[examRooms,setExamRooms]=useState<Room[]>([]),[sessions,setSessions]=useState<ExamSession[]>([]),[arrangements,setArrangements]=useState<SeatingArrangement[]>([]);
  useEffect(()=>subscribeAuth(u=>{setUser(u);setReady(true);if(!u){setCampus(null);setShowCampusPicker(false)}}),[]);
  useEffect(()=>{if(!user){setCampuses([]);setCampus(null);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
-
- // Automatically reopen the campus the user was last working in.
- // The selected campus ID is intentionally preserved through logout/login.
  useEffect(()=>{
    if(!user||!campuses.length||showCampusPicker)return;
    const savedId=getSelectedCampus();
-   if(savedId){
-     const savedCampus=campuses.find(c=>c.id===savedId);
-     if(savedCampus){
-       setCampus(prev=>prev?.id===savedCampus.id?prev:savedCampus);
-       return;
-     }
-     clearSelectedCampus();
-   }
-   // If this is a new account with exactly one campus, open it automatically.
-   if(campuses.length===1){
-     setSelectedCampus(campuses[0].id);
-     setCampus(campuses[0]);
-   }
+   if(savedId){const savedCampus=campuses.find(c=>c.id===savedId);if(savedCampus){setCampus(prev=>prev?.id===savedCampus.id?prev:savedCampus);return}clearSelectedCampus();}
+   if(campuses.length===1){setSelectedCampus(campuses[0].id);setCampus(campuses[0]);}
  },[user,campuses,showCampusPicker]);
-
  useEffect(()=>{if(!user||!campus)return;const a=dbApi.subscribeCategories(setCategories),b=dbApi.subscribeClasses(setClasses),c=dbApi.subscribeStudents(setStudents),d=attendanceApi.subscribeSubjects(setSubjects),e=attendanceApi.subscribeAbsenteeRecords(setAbsentees),f=dbApi.subscribeSessions(x=>setSessions(x.map(normSession))),g=dbApi.subscribeSeatingArrangements(x=>setArrangements(x.map(normArrangement)));return()=>{a();b();c();d();e();f();g()}},[user,campus?.id]);
  useEffect(()=>{if(!user||!campus)return;return subscribeExaminations(user.uid,campus.id,setExams)},[user,campus?.id]);
  useEffect(()=>{if(!exam){setExamRooms([]);return}return dbApi.subscribeExamRooms(exam.id,setExamRooms)},[exam?.id]);
  if(!ready)return <div className="examio-loading">Loading Examio…</div>;
  if(!user)return <AccountGate/>;
-
- // Keep the last selected campus when signing out so the next login returns there.
  const logout=async()=>{setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);setShowCampusPicker(false);await logoutUser()};
-
- // null means "open the campus switcher", not "forget the previous campus".
- const selectCampus=(c:Campus|null)=>{
-   if(!c){
-     setShowCampusPicker(true);
-     setCampus(null);
-     setExam(null);
-     setPrintRequest(null);
-     setExamRooms([]);
-     return;
-   }
-   setSelectedCampus(c.id);
-   setShowCampusPicker(false);
-   setCampus(c);
-   setExam(null);
-   setExamRooms([]);
-   setPrintRequest(null);
-   setTab('dashboard');
- };
+ const selectCampus=(c:Campus|null)=>{if(!c){setShowCampusPicker(true);setCampus(null);setExam(null);setPrintRequest(null);setExamRooms([]);return}setSelectedCampus(c.id);setShowCampusPicker(false);setCampus(c);setExam(null);setExamRooms([]);setPrintRequest(null);setTab('dashboard')};
  const openExam=(x:Examination)=>{setExam({...x});setPrintRequest(null);setTab('dashboard')};
  if(!campus)return <CampusHome uid={user.uid} campuses={campuses} exams={[]} selectedCampus={null} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={openExam} onSignOut={logout}/>;
  if(exam)return <div className="examio-workspace-shell"><ExaminationWorkspace uid={user.uid} campus={campus} exam={exam} categories={categories} classes={classes} subjects={subjects} students={students} rooms={examRooms} arrangements={arrangements} onSaveRoom={(room)=>dbApi.saveExamRoom(exam.id,room)} onDeleteRoom={(id)=>dbApi.deleteExamRoom(exam.id,id)} onDeleteBulkRooms={(ids)=>dbApi.deleteBulkExamRooms(exam.id,ids)} onSaveArrangement={dbApi.saveSeatingArrangement} onOpenPrintModal={(type,session,arrangement)=>setPrintRequest({type,session,arrangement})} onBack={()=>{setExam(null);setExamRooms([])}}/>{printRequest&&<PrintModalView type={printRequest.type} session={printRequest.session} arrangement={printRequest.arrangement} categories={categories} classes={classes} onClose={()=>setPrintRequest(null)}/>}</div>;
  return <div className="examio-app"><AppSidebarV2 activeTab={tab} onTabChange={setTab} campus={campus} campuses={campuses} onCampusChange={selectCampus} onMyCampuses={()=>selectCampus(null)} onLogout={logout}/><main className="examio-main">
-  {tab==='dashboard'&&<DashboardView categories={categories} classes={classes} students={students} sessions={sessions} examinationCount={exams.length} subjects={subjects} absenteeRecords={absentees} onNavigate={()=>setTab('examinations')} onSelectSessionForGenerator={()=>setTab('examinations')}/>}
+  {tab==='dashboard'&&<DashboardView campus={campus} categories={categories} classes={classes} students={students} sessions={sessions} examinationCount={exams.length} examinations={exams} subjects={subjects} absenteeRecords={absentees} onNavigate={(next)=>setTab(next)} onSelectSessionForGenerator={()=>setTab('examinations')} onOpenExamination={openExam}/>}
   {tab==='categories'&&<CategoriesView categories={categories} classes={classes} rooms={[]} onSaveCategory={dbApi.saveCategory} onDeleteCategory={dbApi.deleteCategory} onDeleteBulkCategories={dbApi.deleteBulkCategories}/>}
   {tab==='classes'&&<ClassesView categories={categories} classes={classes} students={students} onSaveClassItem={dbApi.saveClassItem} onSaveBulkClasses={dbApi.saveBulkClasses} onDeleteClassItem={dbApi.deleteClassItem} onDeleteBulkClasses={dbApi.deleteBulkClasses}/>}
   {tab==='students'&&<StudentsView students={students} classes={classes} onSaveStudent={dbApi.saveStudent} onSaveBulkStudents={dbApi.saveBulkStudents} onDeleteStudent={dbApi.deleteStudent} onDeleteBulkStudents={dbApi.deleteBulkStudents}/>}
