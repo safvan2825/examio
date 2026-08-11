@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import './design-overrides.css';
+import './examination-workspace-fix.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
