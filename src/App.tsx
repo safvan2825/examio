@@ -14,9 +14,10 @@ import {CategoriesView} from './components/CategoriesView';
 import {ClassesView} from './components/ClassesView';
 import {StudentsView} from './components/StudentsView';
 import {SubjectsView} from './components/SubjectsView';
+import {TeachersView} from './components/TeachersView';
 import {SettingsView} from './components/SettingsView';
 import {PrintModalView} from './components/PrintModalView';
-import {Category,ClassItem,Student,ExamSession,SeatingArrangement,Subject,AbsenteeRecord,Room} from './types';
+import {Category,ClassItem,Student,ExamSession,SeatingArrangement,Subject,AbsenteeRecord,Room,Teacher,SubjectAssignment} from './types';
 import {Campus,Examination} from './types/tenant';
 
 const arr=<T,>(v:unknown):T[]=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v) as T[]:[]);
@@ -26,16 +27,11 @@ type PrintRequest={type:'roomDiagram'|'studentList';session:ExamSession;arrangem
 
 export default function App(){
  const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[campuses,setCampuses]=useState<Campus[]>([]),[campus,setCampus]=useState<Campus|null>(null),[exams,setExams]=useState<Examination[]>([]),[exam,setExam]=useState<Examination|null>(null),[tab,setTab]=useState<ShellTab>('dashboard'),[printRequest,setPrintRequest]=useState<PrintRequest|null>(null),[showCampusPicker,setShowCampusPicker]=useState(false);
- const [categories,setCategories]=useState<Category[]>([]),[classes,setClasses]=useState<ClassItem[]>([]),[students,setStudents]=useState<Student[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[absentees,setAbsentees]=useState<AbsenteeRecord[]>([]),[examRooms,setExamRooms]=useState<Room[]>([]),[sessions,setSessions]=useState<ExamSession[]>([]),[arrangements,setArrangements]=useState<SeatingArrangement[]>([]);
+ const [categories,setCategories]=useState<Category[]>([]),[classes,setClasses]=useState<ClassItem[]>([]),[students,setStudents]=useState<Student[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[teachers,setTeachers]=useState<Teacher[]>([]),[assignments,setAssignments]=useState<SubjectAssignment[]>([]),[absentees,setAbsentees]=useState<AbsenteeRecord[]>([]),[examRooms,setExamRooms]=useState<Room[]>([]),[sessions,setSessions]=useState<ExamSession[]>([]),[arrangements,setArrangements]=useState<SeatingArrangement[]>([]);
  useEffect(()=>subscribeAuth(u=>{setUser(u);setReady(true);if(!u){setCampus(null);setShowCampusPicker(false)}}),[]);
  useEffect(()=>{if(!user){setCampuses([]);setCampus(null);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
- useEffect(()=>{
-   if(!user||!campuses.length||showCampusPicker)return;
-   const savedId=getSelectedCampus();
-   if(savedId){const savedCampus=campuses.find(c=>c.id===savedId);if(savedCampus){setCampus(prev=>prev?.id===savedCampus.id?prev:savedCampus);return}clearSelectedCampus();}
-   if(campuses.length===1){setSelectedCampus(campuses[0].id);setCampus(campuses[0]);}
- },[user,campuses,showCampusPicker]);
- useEffect(()=>{if(!user||!campus)return;const a=dbApi.subscribeCategories(setCategories),b=dbApi.subscribeClasses(setClasses),c=dbApi.subscribeStudents(setStudents),d=attendanceApi.subscribeSubjects(setSubjects),e=attendanceApi.subscribeAbsenteeRecords(setAbsentees),f=dbApi.subscribeSessions(x=>setSessions(x.map(normSession))),g=dbApi.subscribeSeatingArrangements(x=>setArrangements(x.map(normArrangement)));return()=>{a();b();c();d();e();f();g()}},[user,campus?.id]);
+ useEffect(()=>{if(!user||!campuses.length||showCampusPicker)return;const savedId=getSelectedCampus();if(savedId){const savedCampus=campuses.find(c=>c.id===savedId);if(savedCampus){setCampus(prev=>prev?.id===savedCampus.id?prev:savedCampus);return}clearSelectedCampus();}if(campuses.length===1){setSelectedCampus(campuses[0].id);setCampus(campuses[0])}},[user,campuses,showCampusPicker]);
+ useEffect(()=>{if(!user||!campus)return;const a=dbApi.subscribeCategories(setCategories),b=dbApi.subscribeClasses(setClasses),c=dbApi.subscribeStudents(setStudents),d=attendanceApi.subscribeSubjects(setSubjects),e=dbApi.subscribeTeachers(setTeachers),f=dbApi.subscribeSubjectAssignments(setAssignments),g=attendanceApi.subscribeAbsenteeRecords(setAbsentees),h=dbApi.subscribeSessions(x=>setSessions(x.map(normSession))),i=dbApi.subscribeSeatingArrangements(x=>setArrangements(x.map(normArrangement)));return()=>{a();b();c();d();e();f();g();h();i()}},[user,campus?.id]);
  useEffect(()=>{if(!user||!campus)return;return subscribeExaminations(user.uid,campus.id,setExams)},[user,campus?.id]);
  useEffect(()=>{if(!exam){setExamRooms([]);return}return dbApi.subscribeExamRooms(exam.id,setExamRooms)},[exam?.id]);
  if(!ready)return <div className="examio-loading">Loading Examio…</div>;
@@ -50,7 +46,8 @@ export default function App(){
   {tab==='categories'&&<CategoriesView categories={categories} classes={classes} rooms={[]} onSaveCategory={dbApi.saveCategory} onDeleteCategory={dbApi.deleteCategory} onDeleteBulkCategories={dbApi.deleteBulkCategories}/>}
   {tab==='classes'&&<ClassesView categories={categories} classes={classes} students={students} onSaveClassItem={dbApi.saveClassItem} onSaveBulkClasses={dbApi.saveBulkClasses} onDeleteClassItem={dbApi.deleteClassItem} onDeleteBulkClasses={dbApi.deleteBulkClasses}/>}
   {tab==='students'&&<StudentsView students={students} classes={classes} onSaveStudent={dbApi.saveStudent} onSaveBulkStudents={dbApi.saveBulkStudents} onDeleteStudent={dbApi.deleteStudent} onDeleteBulkStudents={dbApi.deleteBulkStudents}/>}
-  {tab==='subjects'&&<SubjectsView subjects={subjects} onSave={attendanceApi.saveSubject} onDelete={attendanceApi.deleteSubject}/>}
+  {tab==='subjects'&&<SubjectsView subjects={subjects} classes={classes} teachers={teachers} assignments={assignments} onSave={attendanceApi.saveSubject} onDelete={attendanceApi.deleteSubject} onSaveTeacher={dbApi.saveTeacher} onSaveAssignment={dbApi.saveSubjectAssignment}/>}
+  {tab==='teachers'&&<TeachersView teachers={teachers} onSave={dbApi.saveTeacher} onDelete={dbApi.deleteTeacher}/>}
   {tab==='examinations'&&<ExaminationsView uid={user.uid} campus={campus} exams={exams} onOpen={openExam}/>}
   {tab==='settings'&&<SettingsView adminCredentials={{username:user.email||'admin',password:''}} onSeedDemoData={async()=>{}} onClearAllData={dbApi.clearAllData} onNavigate={()=>{}} onDataRestored={()=>{}}/>}
  </main></div>;
