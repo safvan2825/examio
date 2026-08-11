@@ -19,6 +19,7 @@ import {SettingsView} from './components/SettingsView';
 import {PrintModalView} from './components/PrintModalView';
 import {Category,ClassItem,Student,ExamSession,SeatingArrangement,Subject,AbsenteeRecord,Room,Teacher,SubjectAssignment} from './types';
 import {Campus,Examination} from './types/tenant';
+import './components/ProfessionalTheme.css';
 
 const arr=<T,>(v:unknown):T[]=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v) as T[]:[]);
 const normSession=(x:ExamSession):ExamSession=>({...x,classConfigs:arr(x.classConfigs)});
