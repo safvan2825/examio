@@ -1,153 +1,304 @@
-/* Examio unified visual system — intentionally scoped to the main content area so the sidebar and functional layout remain intact. */
-.examio-main{
-  background:linear-gradient(135deg,#edf9fb 0%,#f8fcfd 52%,#e8f5f7 100%);
+/* Examio — unified visual language inspired by the supplied reference
+   Applies to dashboard, campus, classes, students, subjects, rooms, examinations,
+   settings and examination workspace without changing application logic. */
+
+:root{
+  --ex-bg:#eef8fa;
+  --ex-surface:#ffffff;
+  --ex-surface-soft:#f5fafb;
+  --ex-border:#d7e8ea;
+  --ex-text:#163942;
+  --ex-muted:#789096;
+  --ex-teal:#1599a6;
+  --ex-teal-2:#35bac2;
+  --ex-teal-dark:#073f49;
+  --ex-shadow:0 12px 34px rgba(36,91,101,.075);
 }
 
-/* Universal content cards */
-.examio-main .bg-white{
-  background:rgba(255,255,255,.90)!important;
-  border-color:rgba(112,181,191,.22)!important;
-  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+html,body,#root{min-height:100%;}
+body{
+  background:linear-gradient(135deg,#edf8fa 0%,#f8fcfd 52%,#e8f5f7 100%)!important;
+  color:var(--ex-text);
 }
-.examio-main .bg-slate-50{
-  background:#f3f9fa!important;
+
+/* Main shell */
+.examio-app{background:linear-gradient(135deg,#edf8fa,#f8fcfd)!important;}
+.examio-main{
+  background:transparent!important;
+  padding:28px!important;
 }
-.examio-main .border-slate-200,
-.examio-main .border-slate-200\/80,
-.examio-main .border-slate-100{
-  border-color:#d3e7e9!important;
+.examio-workspace-shell{
+  background:linear-gradient(135deg,#edf8fa,#f8fcfd)!important;
+  padding:28px!important;
 }
-.examio-main .rounded-lg,
-.examio-main .rounded-2xl{
+
+/* Sidebar: keep the same visual identity on every page */
+.examio-sidebar{
+  background:linear-gradient(180deg,#073b45 0%,#07515a 58%,#063f49 100%)!important;
+  border-right:1px solid rgba(255,255,255,.06);
+  box-shadow:10px 0 34px rgba(21,79,88,.10)!important;
+}
+.examio-nav-item.active{
+  background:linear-gradient(135deg,#65d2d6,#39b9c1)!important;
+  color:#073f48!important;
+}
+
+/* Shared page width / headings */
+.examio-page{max-width:1240px!important;}
+.examio-hero{padding:8px 2px 24px!important;}
+.examio-hero h1{color:#123740!important;font-weight:800!important;}
+.examio-hero p{color:#7b9297!important;}
+.examio-eyebrow{color:#179aa5!important;}
+
+/* Dashboard header: replace the old navy banner with the reference's soft card */
+.examio-main .bg-slate-900{
+  background:linear-gradient(135deg,#ffffff 0%,#eef9fa 100%)!important;
+  border:1px solid var(--ex-border)!important;
+  border-radius:24px!important;
+  box-shadow:var(--ex-shadow)!important;
+  color:var(--ex-text)!important;
+}
+.examio-main .bg-slate-900 h1,
+.examio-main .bg-slate-900 h2,
+.examio-main .bg-slate-900 h3,
+.examio-main .bg-slate-900 .text-white{color:#153942!important;}
+.examio-main .bg-slate-900 .text-slate-400,
+.examio-main .bg-slate-900 .text-slate-300{color:#718b91!important;}
+.examio-main .bg-slate-900 .bg-blue-600{background:linear-gradient(135deg,#18b9c5,#1599aa)!important;color:#fff!important;}
+
+/* Every standard content card */
+.examio-main .bg-white,
+.examio-main .bg-white\/90,
+.examio-main .bg-white\/80{
+  background:rgba(255,255,255,.92)!important;
+  border-color:var(--ex-border)!important;
+  box-shadow:var(--ex-shadow)!important;
+}
+.examio-main .rounded-2xl,
+.examio-main .rounded-xl,
+.examio-main .rounded-lg{
   border-radius:20px!important;
 }
 .examio-main .shadow-2xs,
-.examio-main .shadow-xs{
-  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+.examio-main .shadow-xs,
+.examio-main .shadow-sm,
+.examio-main .shadow-md{
+  box-shadow:var(--ex-shadow)!important;
 }
 
-/* Typography */
-.examio-main .text-slate-900,
-.examio-main .text-slate-800{color:#153b44!important}
-.examio-main .text-slate-700,
-.examio-main .text-slate-600{color:#52767d!important}
-.examio-main .text-slate-500,
-.examio-main .text-slate-400{color:#7d969b!important}
-
-/* Dashboard hero */
-.examio-main .bg-slate-900{
-  background:linear-gradient(135deg,#083d46 0%,#07505a 58%,#06404a 100%)!important;
-  border:1px solid rgba(211,248,250,.12)!important;
-  border-radius:24px!important;
-  box-shadow:0 18px 42px rgba(17,83,93,.16)!important;
-}
-.examio-main .bg-slate-900 .text-slate-400{color:#a9cdd1!important}
-
-/* Primary actions */
-.examio-main .bg-blue-600,
-.examio-main .bg-emerald-600{
-  background:linear-gradient(135deg,#18b9c5,#1599aa)!important;
-  border:0!important;
-  box-shadow:0 10px 24px rgba(21,153,170,.20)!important;
-}
-.examio-main .bg-blue-600:hover,
-.examio-main .bg-emerald-600:hover{
-  background:linear-gradient(135deg,#22c3ce,#18a5b4)!important;
-}
-.examio-main .text-blue-600{color:#138f9a!important}
-.examio-main .text-emerald-700,
-.examio-main .text-emerald-600{color:#1597a3!important}
-
-/* Header/action bars on Classes, Students, Subjects, Rooms, etc. */
+/* Header/action strips such as Exam Classes */
 .examio-main > .space-y-6 > :first-child,
 .examio-main > div.space-y-6 > :first-child{
+  background:linear-gradient(135deg,#ffffff,#f7fcfd)!important;
+  border:1px solid var(--ex-border)!important;
   border-radius:22px!important;
-  background:rgba(255,255,255,.92)!important;
-  border:1px solid rgba(112,181,191,.22)!important;
-  box-shadow:0 12px 35px rgba(40,88,100,.065)!important;
+  box-shadow:var(--ex-shadow)!important;
 }
+.examio-main > .space-y-6 > :first-child h2,
+.examio-main > div.space-y-6 > :first-child h2{color:#163942!important;}
 
-/* Collection cards */
+/* Collection grids — classes, categories, students, rooms, subjects */
 .examio-main .grid > .bg-white{
+  background:#fff!important;
+  border:1px solid var(--ex-border)!important;
+  border-radius:22px!important;
+  box-shadow:var(--ex-shadow)!important;
   transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
 }
 .examio-main .grid > .bg-white:hover{
   transform:translateY(-2px);
-  box-shadow:0 18px 40px rgba(40,88,100,.11)!important;
-  border-color:#8fd4da!important;
+  border-color:#9bd8dc!important;
+  box-shadow:0 18px 42px rgba(35,91,101,.12)!important;
 }
 
-/* Class/category/student icon blocks */
-.examio-main .bg-indigo-50{
-  background:#eaf0ff!important;
-  color:#5b5ce2!important;
-}
-.examio-main .bg-slate-100{
-  background:#edf6f7!important;
-}
+/* Reference-style icon tiles */
+.examio-main .bg-indigo-50{background:#edf0ff!important;color:#5b5de0!important;}
+.examio-main .bg-purple-50{background:#f0eaff!important;color:#8558df!important;}
+.examio-main .bg-emerald-50{background:#e9faf3!important;color:#129a6b!important;}
+.examio-main .bg-blue-50{background:#eaf5ff!important;color:#3385dd!important;}
+.examio-main .bg-orange-50{background:#fff2e7!important;color:#ec8b39!important;}
+.examio-main .bg-rose-50{background:#fff0f3!important;color:#dc6174!important;}
+.examio-main .bg-cyan-50{background:#e8fafd!important;color:#1aa4bb!important;}
+.examio-main .bg-slate-50{background:#f4f9fa!important;}
+.examio-main .bg-slate-100{background:#edf5f6!important;}
 
-/* Inputs and selects */
+/* Typography normalization */
+.examio-main .text-slate-950,
+.examio-main .text-slate-900,
+.examio-main .text-slate-800{color:#163942!important;}
+.examio-main .text-slate-700,
+.examio-main .text-slate-600{color:#52757c!important;}
+.examio-main .text-slate-500,
+.examio-main .text-slate-400{color:#7c959a!important;}
+.examio-main .text-indigo-600{color:#5b5de0!important;}
+.examio-main .text-blue-600{color:#188fa0!important;}
+.examio-main .text-emerald-700,
+.examio-main .text-emerald-600{color:#159a78!important;}
+
+/* Buttons */
+.examio-main .bg-emerald-600,
+.examio-main .bg-blue-600,
+.examio-main .bg-teal-600{
+  background:linear-gradient(135deg,#18b9c5,#1599aa)!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 10px 24px rgba(21,153,170,.20)!important;
+}
+.examio-main .bg-emerald-600:hover,
+.examio-main .bg-blue-600:hover,
+.examio-main .bg-teal-600:hover{
+  background:linear-gradient(135deg,#28c4cb,#18a7b3)!important;
+}
+.examio-main .bg-slate-100:hover{background:#e4f1f2!important;}
+.examio-main .bg-rose-600{background:#df6176!important;border-radius:13px!important;}
+
+/* Inputs / selects / textareas */
 .examio-main input,
 .examio-main select,
 .examio-main textarea{
-  border-color:#cfe3e6!important;
-  border-radius:13px!important;
   background:#fff!important;
-  color:#193c44!important;
+  color:#193d45!important;
+  border:1px solid #cfe3e6!important;
+  border-radius:13px!important;
 }
 .examio-main input:focus,
 .examio-main select:focus,
 .examio-main textarea:focus{
+  outline:none!important;
   border-color:#58bfc8!important;
   box-shadow:0 0 0 3px rgba(88,191,200,.13)!important;
 }
 
-/* Destructive controls */
-.examio-main .bg-rose-600{
-  background:#e45b73!important;
-  border-radius:13px!important;
-}
-.examio-main .bg-rose-50{
-  background:#fff2f4!important;
-  border-color:#ffd6dc!important;
-}
+/* Tables */
+.examio-main table{border-color:var(--ex-border)!important;}
+.examio-main thead,
+.examio-main th{background:#f1f8f9!important;color:#6f898f!important;}
+.examio-main td,
+.examio-main th{border-color:#e1edef!important;}
 
-/* Dashboard stat cards */
-.examio-main .grid.grid-cols-2 > .bg-white,
-.examio-main .grid.grid-cols-2 > div.bg-white{
-  border-radius:19px!important;
-  min-height:112px;
-}
-
-/* Dashboard lower panels */
-.examio-main .lg\:col-span-2.bg-white,
-.examio-main .lg\:col-span-2.bg-white + .bg-white,
-.examio-main .grid.grid-cols-1.lg\:grid-cols-3 > .bg-white{
-  border-radius:22px!important;
-}
-
-/* Empty states */
+/* Empty/dashed areas */
 .examio-main .border-dashed{
-  border-color:#a9d4d8!important;
-  background:#f6fbfc!important;
+  background:#f7fbfc!important;
+  border-color:#b5dadd!important;
 }
 
 /* Modals */
 .examio-main .fixed.inset-0.bg-slate-900\/50{
-  background:rgba(18,49,57,.42)!important;
-  backdrop-filter:blur(7px);
+  background:rgba(8,48,57,.42)!important;
+  backdrop-filter:blur(7px)!important;
 }
 .examio-main .fixed.inset-0.bg-slate-900\/50 > div{
+  background:#fbffff!important;
+  border:1px solid var(--ex-border)!important;
   border-radius:27px!important;
-  border-color:#d0e5e7!important;
   box-shadow:0 30px 80px rgba(12,54,63,.25)!important;
 }
 
-/* Mobile spacing */
-@media(max-width:900px){
-  .examio-main{padding:20px!important}
+/* Campus/account screens */
+.examio-page .examio-campus-card,
+.examio-page .examio-info-card,
+.examio-page .examio-campus-banner,
+.examio-page .examio-statrow>div{
+  background:rgba(255,255,255,.92)!important;
+  border-color:var(--ex-border)!important;
+  box-shadow:var(--ex-shadow)!important;
 }
-@media(max-width:640px){
-  .examio-main{padding:14px!important}
-  .examio-main .grid{gap:12px}
+.examio-campus-card:hover{border-color:#9bd8dc!important;}
+.examio-campus-logo,
+.examio-campus-emblem,
+.examio-info-card .examio-icon{
+  background:linear-gradient(135deg,#e8f7f7,#d8f0f2)!important;
+  color:#168f9b!important;
+}
+
+/* Examination workspace — same cards, same palette */
+.examio-exam-page{max-width:1240px!important;}
+.examio-exam-header{
+  background:rgba(255,255,255,.76);
+  border:1px solid var(--ex-border);
+  border-radius:24px;
+  padding:17px 20px!important;
+  margin-bottom:16px;
+  box-shadow:var(--ex-shadow);
+}
+.examio-exam-title h1{color:#153942!important;}
+.examio-exam-tabs{
+  background:#fff!important;
+  border-color:var(--ex-border)!important;
+  box-shadow:var(--ex-shadow)!important;
+}
+.examio-exam-tabs button.active{
+  background:linear-gradient(135deg,#e8f8f7,#dff4f4)!important;
+  color:#138e99!important;
+}
+.examio-panel,
+.examio-metric{
+  background:rgba(255,255,255,.93)!important;
+  border-color:var(--ex-border)!important;
+  box-shadow:var(--ex-shadow)!important;
+}
+.examio-panel h2{color:#163942!important;}
+.examio-step{background:#f3f9fa!important;border-color:#dcebed!important;}
+.examio-step.done{background:#e8f8f7!important;border-color:#a7dfe0!important;}
+
+/* Ensure examination sidebar layout feels like the main dashboard */
+.examio-workspace-shell .examio-exam-page{
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  column-gap:22px;
+  align-items:start;
+}
+.examio-workspace-shell .examio-exam-header{
+  grid-column:1/-1;
+}
+.examio-workspace-shell .examio-exam-tabs{
+  grid-column:1;
+  grid-row:2;
+  width:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  margin:0!important;
+  padding:10px!important;
+  position:sticky;
+  top:18px;
+}
+.examio-workspace-shell .examio-exam-tabs button{
+  justify-content:flex-start;
+  padding:12px 13px!important;
+  min-height:42px;
+  border-radius:12px!important;
+}
+.examio-workspace-shell .examio-exam-tabs button.active{
+  background:linear-gradient(135deg,#65d2d6,#39b9c1)!important;
+  color:#073f48!important;
+  box-shadow:none!important;
+}
+.examio-workspace-shell .examio-exam-page > .examio-work-grid,
+.examio-workspace-shell .examio-exam-page > .examio-panel,
+.examio-workspace-shell .examio-exam-page > .examio-placeholder{
+  grid-column:2;
+  grid-row:2;
+}
+
+/* Primary actions in workspace */
+.examio-primary{
+  background:linear-gradient(135deg,#18b9c5,#1599aa)!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 10px 24px rgba(21,153,170,.20)!important;
+}
+
+/* Responsive */
+@media(max-width:1000px){
+  .examio-workspace-shell .examio-exam-page{grid-template-columns:1fr;}
+  .examio-workspace-shell .examio-exam-tabs{grid-column:1;grid-row:auto;position:static;flex-direction:row!important;width:100%!important;overflow:auto;}
+  .examio-workspace-shell .examio-exam-tabs button{justify-content:center;white-space:nowrap;}
+  .examio-workspace-shell .examio-exam-page > .examio-work-grid,
+  .examio-workspace-shell .examio-exam-page > .examio-panel,
+  .examio-workspace-shell .examio-exam-page > .examio-placeholder{grid-column:1;grid-row:auto;}
+}
+@media(max-width:700px){
+  .examio-main,.examio-workspace-shell{padding:16px!important;}
+  .examio-exam-header{padding:14px!important;}
 }
