@@ -15,6 +15,7 @@ import {StudentsView} from './components/StudentsView';
 import {SubjectsView} from './components/SubjectsView';
 import {RoomsView} from './components/RoomsView';
 import {SettingsView} from './components/SettingsView';
+import {PrintModalView} from './components/PrintModalView';
 import {Category,ClassItem,Student,Room,ExamSession,SeatingArrangement,Subject,AbsenteeRecord} from './types';
 import {Campus,Examination} from './types/tenant';
 
@@ -23,8 +24,10 @@ const normSession=(x:ExamSession):ExamSession=>({...x,classConfigs:arr(x.classCo
 const normRoom=(x:Room):Room=>({...x,sides:x.sides===undefined?undefined:arr<any>(x.sides),onlineSlots:x.onlineSlots===undefined?undefined:arr<string>(x.onlineSlots)});
 const normArrangement=(x:SeatingArrangement):SeatingArrangement=>({...x,manualAllocations:arr(x.manualAllocations),onlineAllocations:arr(x.onlineAllocations),roomDiagrams:arr<any>(x.roomDiagrams).map(d=>({...d,sides:arr<any>(d.sides).map(s=>({...s,grid:arr<any>(s.grid).map((r:any)=>arr<any>(r))})),classSummary:arr<any>(d.classSummary)})),roomSummaries:arr<any>(x.roomSummaries)});
 
+type PrintRequest={type:'roomDiagram'|'studentList';session:ExamSession;arrangement:SeatingArrangement};
+
 export default function App(){
- const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[campuses,setCampuses]=useState<Campus[]>([]),[campus,setCampus]=useState<Campus|null>(null),[exams,setExams]=useState<Examination[]>([]),[exam,setExam]=useState<Examination|null>(null),[tab,setTab]=useState<ShellTab>('dashboard');
+ const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[campuses,setCampuses]=useState<Campus[]>([]),[campus,setCampus]=useState<Campus|null>(null),[exams,setExams]=useState<Examination[]>([]),[exam,setExam]=useState<Examination|null>(null),[tab,setTab]=useState<ShellTab>('dashboard'),[printRequest,setPrintRequest]=useState<PrintRequest|null>(null);
  const [categories,setCategories]=useState<Category[]>([]),[classes,setClasses]=useState<ClassItem[]>([]),[students,setStudents]=useState<Student[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[absentees,setAbsentees]=useState<AbsenteeRecord[]>([]),[rooms,setRooms]=useState<Room[]>([]),[sessions,setSessions]=useState<ExamSession[]>([]),[arrangements,setArrangements]=useState<SeatingArrangement[]>([]);
  useEffect(()=>subscribeAuth(u=>{setUser(u);setReady(true)}),[]);
  useEffect(()=>{if(!user){setCampuses([]);return}return subscribeCampuses(user.uid,setCampuses)},[user]);
@@ -33,18 +36,18 @@ export default function App(){
  useEffect(()=>{if(!user||!campus)return;return subscribeExaminations(user.uid,campus.id,setExams)},[user,campus?.id]);
  if(!ready)return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white text-sm">Loading Examio…</div>;
  if(!user)return <AccountGate/>;
- const logout=async()=>{clearSelectedCampus();setCampus(null);setExam(null);await logoutUser()};
- const selectCampus=(c:Campus|null)=>{if(!c){clearSelectedCampus();setCampus(null);setExam(null);return}setSelectedCampus(c.id);setCampus(c);setExam(null);setTab('dashboard')};
+ const logout=async()=>{clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);await logoutUser()};
+ const selectCampus=(c:Campus|null)=>{if(!c){clearSelectedCampus();setCampus(null);setExam(null);setPrintRequest(null);return}setSelectedCampus(c.id);setCampus(c);setExam(null);setPrintRequest(null);setTab('dashboard')};
  if(!campus)return <CampusHome uid={user.uid} campuses={campuses} exams={[]} selectedCampus={null} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={setExam} onSignOut={logout}/>;
- if(exam)return <ExaminationWorkspace uid={user.uid} campus={campus} exam={exam} categories={categories} classes={classes} subjects={subjects} onBack={()=>setExam(null)}/>;
+ if(exam)return <><ExaminationWorkspace uid={user.uid} campus={campus} exam={exam} categories={categories} classes={classes} subjects={subjects} students={students} rooms={rooms} arrangements={arrangements} onSaveArrangement={dbApi.saveSeatingArrangement} onOpenPrintModal={(type,session,arrangement)=>setPrintRequest({type,session,arrangement})} onBack={()=>setExam(null)}/>{printRequest&&<PrintModalView type={printRequest.type} session={printRequest.session} arrangement={printRequest.arrangement} categories={categories} classes={classes} onClose={()=>setPrintRequest(null)}/>}</>;
  return <div className="min-h-screen bg-slate-50 text-slate-800 flex"><AppSidebar activeTab={tab} onTabChange={setTab} campus={campus} campuses={campuses} onCampusChange={selectCampus} onMyCampuses={()=>selectCampus(null)} onLogout={logout}/><main className="flex-1 p-6 overflow-y-auto">
-  {tab==='dashboard'&&<DashboardView categories={categories} classes={classes} students={students} subjects={subjects} absenteeRecords={absentees} rooms={rooms} sessions={sessions} onNavigate={()=>setTab('examinations')} onSelectSessionForGenerator={()=>setTab('examinations')}/>} 
-  {tab==='categories'&&<CategoriesView categories={categories} classes={classes} rooms={rooms} onSaveCategory={dbApi.saveCategory} onDeleteCategory={dbApi.deleteCategory} onDeleteBulkCategories={dbApi.deleteBulkCategories}/>} 
-  {tab==='classes'&&<ClassesView categories={categories} classes={classes} students={students} onSaveClassItem={dbApi.saveClassItem} onSaveBulkClasses={dbApi.saveBulkClasses} onDeleteClassItem={dbApi.deleteClassItem} onDeleteBulkClasses={dbApi.deleteBulkClasses}/>} 
-  {tab==='students'&&<StudentsView students={students} classes={classes} onSaveStudent={dbApi.saveStudent} onSaveBulkStudents={dbApi.saveBulkStudents} onDeleteStudent={dbApi.deleteStudent} onDeleteBulkStudents={dbApi.deleteBulkStudents}/>} 
-  {tab==='subjects'&&<SubjectsView subjects={subjects} onSave={attendanceApi.saveSubject} onDelete={attendanceApi.deleteSubject}/>} 
-  {tab==='rooms'&&<RoomsView rooms={rooms} categories={categories} onSaveRoom={dbApi.saveRoom} onDeleteRoom={dbApi.deleteRoom} onDeleteBulkRooms={dbApi.deleteBulkRooms}/>} 
-  {tab==='examinations'&&<CampusHome uid={user.uid} campuses={campuses} exams={exams} selectedCampus={campus} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={setExam} onSignOut={logout}/>} 
+  {tab==='dashboard'&&<DashboardView categories={categories} classes={classes} students={students} subjects={subjects} absenteeRecords={absentees} rooms={rooms} sessions={sessions} onNavigate={()=>setTab('examinations')} onSelectSessionForGenerator={()=>setTab('examinations')}/>}
+  {tab==='categories'&&<CategoriesView categories={categories} classes={classes} rooms={rooms} onSaveCategory={dbApi.saveCategory} onDeleteCategory={dbApi.deleteCategory} onDeleteBulkCategories={dbApi.deleteBulkCategories}/>}
+  {tab==='classes'&&<ClassesView categories={categories} classes={classes} students={students} onSaveClassItem={dbApi.saveClassItem} onSaveBulkClasses={dbApi.saveBulkClasses} onDeleteClassItem={dbApi.deleteClassItem} onDeleteBulkClasses={dbApi.deleteBulkClasses}/>}
+  {tab==='students'&&<StudentsView students={students} classes={classes} onSaveStudent={dbApi.saveStudent} onSaveBulkStudents={dbApi.saveBulkStudents} onDeleteStudent={dbApi.deleteStudent} onDeleteBulkStudents={dbApi.deleteBulkStudents}/>}
+  {tab==='subjects'&&<SubjectsView subjects={subjects} onSave={attendanceApi.saveSubject} onDelete={attendanceApi.deleteSubject}/>}
+  {tab==='rooms'&&<RoomsView rooms={rooms} categories={categories} onSaveRoom={dbApi.saveRoom} onDeleteRoom={dbApi.deleteRoom} onDeleteBulkRooms={dbApi.deleteBulkRooms}/>}
+  {tab==='examinations'&&<CampusHome uid={user.uid} campuses={campuses} exams={exams} selectedCampus={campus} onCampusSelected={selectCampus} onRefresh={()=>{}} onOpenExam={setExam} onSignOut={logout}/>}
   {tab==='settings'&&<SettingsView adminCredentials={{username:user.email||'admin',password:''}} onSeedDemoData={async()=>{}} onClearAllData={dbApi.clearAllData} onNavigate={()=>{}} onDataRestored={()=>{}}/>}
  </main></div>;
 }
