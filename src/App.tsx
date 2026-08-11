@@ -10,6 +10,7 @@ import { ReportsView } from './components/ReportsView';
 import { RoomsView } from './components/RoomsView';
 import { TimetableFolderView } from './components/TimetableFolderView';
 import { SeatingGeneratorView } from './components/SeatingGeneratorView';
+import { DutyManagementView } from './components/DutyManagementView';
 import { SearchView } from './components/SearchView';
 import { SettingsView } from './components/SettingsView';
 import { PrintModalView } from './components/PrintModalView';
@@ -52,6 +53,7 @@ export default function App() {
     {activeTab==='rooms'&&<RoomsView rooms={rooms} categories={categories} onSaveRoom={saveRoom} onDeleteRoom={deleteRoom} onDeleteBulkRooms={deleteBulkRooms}/>} 
     {activeTab==='timetable'&&<TimetableFolderView sessions={sessions} classes={classes} onSaveSession={saveSession} onDeleteSession={deleteSession} onSelectSessionForGenerator={handleSelectSessionForGenerator}/>} 
     {activeTab==='generator'&&<SeatingGeneratorView sessions={sessions} students={students} classes={classes} categories={categories} rooms={rooms} arrangements={seatingArrangements} selectedSessionIdFromNav={selectedGeneratorSessionId||sessions[0]?.id||''} onSaveArrangement={saveSeatingArrangement} onOpenPrintModal={handleOpenPrintModal}/>} 
+    {activeTab==='duty'&&<DutyManagementView/>}
     {activeTab==='search'&&<SearchView students={students} classes={classes} categories={categories} rooms={rooms} sessions={sessions} arrangements={seatingArrangements}/>} 
     {activeTab==='settings'&&<SettingsView adminCredentials={adminCredentials} onSeedDemoData={seedSampleData} onClearAllData={clearAllData} onNavigate={setActiveTab} onDataRestored={()=>{}}/>}
   </main>{printModalState.isOpen&&printModalState.session&&printModalState.arrangement&&<PrintModalView type={printModalState.type} session={printModalState.session} arrangement={printModalState.arrangement} categories={categories} classes={classes} onClose={()=>setPrintModalState({...printModalState,isOpen:false})}/>} {!isOnline&&<div className="fixed bottom-4 right-4 bg-amber-100 text-amber-800 border border-amber-200 px-3 py-2 rounded-lg text-xs font-semibold shadow-lg">Offline — Firebase changes may fail until connection returns.</div>}</div>;
