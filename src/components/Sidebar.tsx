@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, FolderTree, GraduationCap, Users, Grid, Calendar, Layers, Search, Settings, LogOut, BookOpen, ClipboardList, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FolderTree, GraduationCap, Users, Grid, Calendar, Layers, Search, Settings, LogOut, BookOpen, ClipboardList, BarChart3, ShieldCheck } from 'lucide-react';
 
-export type NavTab = 'dashboard' | 'categories' | 'classes' | 'students' | 'rooms' | 'timetable' | 'generator' | 'search' | 'subjects' | 'absentees' | 'reports' | 'settings';
+export type NavTab = 'dashboard' | 'categories' | 'classes' | 'students' | 'rooms' | 'timetable' | 'generator' | 'search' | 'subjects' | 'absentees' | 'reports' | 'duty' | 'settings';
 interface SidebarProps { activeTab: NavTab; onTabChange: (tab: NavTab) => void; onLogout?: () => void; }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogout }) => {
@@ -18,6 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogo
     { id: 'reports', label: 'Absentee Reports', icon: BarChart3 },
     { id: 'generator', label: 'Seating Generator', icon: Layers },
     { id: 'timetable', label: 'Exam Timetable', icon: Calendar },
+    { id: 'duty', label: 'Duty Management', icon: ShieldCheck },
     { id: 'search', label: 'Search Records', icon: Search },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
