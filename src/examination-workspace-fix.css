@@ -1,0 +1,9 @@
+/* Fix for the examination workspace shell. The workspace component contains its own sidebar + content layout; do not treat the whole layout as a single grid column. */
+.examio-workspace-shell .examio-exam-page{display:block!important;width:100%!important;max-width:1240px!important;margin:0 auto!important;}
+.examio-workspace-shell .examio-exam-header{display:flex!important;width:100%!important;box-sizing:border-box!important;}
+.examio-workspace-shell .examio-exam-layout{display:flex!important;width:100%!important;min-width:0!important;min-height:calc(100vh - 205px)!important;box-sizing:border-box!important;align-items:stretch!important;}
+.examio-workspace-shell .examio-exam-sidebar{display:flex!important;flex:0 0 228px!important;width:228px!important;min-width:228px!important;}
+.examio-workspace-shell .examio-exam-content{display:block!important;visibility:visible!important;opacity:1!important;flex:1 1 0%!important;width:auto!important;min-width:0!important;min-height:500px!important;box-sizing:border-box!important;position:relative!important;z-index:1!important;overflow:auto!important;}
+.examio-workspace-shell .examio-content-heading{display:flex!important;visibility:visible!important;opacity:1!important;}
+.examio-workspace-shell .examio-exam-content .examio-panel{display:block!important;visibility:visible!important;opacity:1!important;}
+@media(max-width:760px){.examio-workspace-shell .examio-exam-layout{width:100%!important}.examio-workspace-shell .examio-exam-sidebar{flex:0 0 72px!important;width:72px!important;min-width:72px!important}.examio-workspace-shell .examio-exam-content{width:auto!important;min-width:0!important;padding:16px!important;}}
