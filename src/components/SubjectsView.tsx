@@ -1,62 +1,24 @@
-import React, { useMemo, useState } from 'react';
-import { BookOpen, Edit3, Plus, Search, Trash2, X } from 'lucide-react';
-import { Subject } from '../types';
+import React,{useMemo,useRef,useState} from 'react';
+import {BookOpen,Edit3,FileSpreadsheet,Plus,Search,Trash2,UploadCloud,X} from 'lucide-react';
+import * as XLSX from 'xlsx';
+import {ClassItem,Subject,SubjectAssignment,Teacher} from '../types';
 
-interface Props {
-  subjects: Subject[];
-  onSave: (subject: Subject) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-}
-
-export const SubjectsView: React.FC<Props> = ({ subjects, onSave, onDelete }) => {
-  const [query, setQuery] = useState('');
-  const [name, setName] = useState('');
-  const [editing, setEditing] = useState<Subject | null>(null);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const filtered = useMemo(() => subjects.filter(s => s.name.toLowerCase().includes(query.toLowerCase())), [subjects, query]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanName = name.trim();
-    if (!cleanName) return setError('Subject name is required.');
-    const duplicate = subjects.some(s => s.name.trim().toLowerCase() === cleanName.toLowerCase() && s.id !== editing?.id);
-    if (duplicate) return setError('This subject already exists.');
-    setSaving(true); setError('');
-    try {
-      const now = new Date().toISOString();
-      await onSave(editing ? { ...editing, name: cleanName, updatedAt: now } : { id: crypto.randomUUID(), name: cleanName, createdAt: now, updatedAt: now });
-      setName(''); setEditing(null);
-    } catch (err: any) { setError(err?.message || 'Unable to save subject.'); }
-    finally { setSaving(false); }
-  };
-
-  const startEdit = (subject: Subject) => { setEditing(subject); setName(subject.name); setError(''); };
-  const cancel = () => { setEditing(null); setName(''); setError(''); };
-
-  return <div className="space-y-5">
-    <div className="flex items-center justify-between gap-4">
-      <div><h1 className="text-xl font-bold text-slate-900">Subjects</h1><p className="text-xs text-slate-500 mt-1">Permanent master list used by absentee entry and reports.</p></div>
-      <div className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-2"><BookOpen className="w-4 h-4" />{subjects.length} Subjects</div>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <form onSubmit={submit} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-fit">
-        <div className="flex items-center justify-between mb-4"><h2 className="font-bold text-sm">{editing ? 'Edit Subject' : 'Add Subject'}</h2>{editing && <button type="button" onClick={cancel}><X className="w-4 h-4 text-slate-400" /></button>}</div>
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Subject Name</label>
-        <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mathematics" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-        {error && <p className="text-xs text-rose-600 mt-2">{error}</p>}
-        <button disabled={saving} className="mt-4 w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-lg py-2.5 text-xs font-bold flex items-center justify-center gap-2"><Plus className="w-4 h-4" />{saving ? 'Saving…' : editing ? 'Update Subject' : 'Save Subject'}</button>
-      </form>
-
-      <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3"><Search className="w-4 h-4 text-slate-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search subjects…" className="flex-1 outline-none text-sm" /></div>
-        <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500"><th className="px-4 py-3">SI.NO</th><th className="px-4 py-3">SUBJECT</th><th className="px-4 py-3 text-right">ACTION</th></tr></thead><tbody>
-          {filtered.map((s, i) => <tr key={s.id} className="border-t border-slate-100"><td className="px-4 py-3 text-xs text-slate-500">{i + 1}</td><td className="px-4 py-3 text-sm font-semibold text-slate-800">{s.name}</td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button onClick={() => startEdit(s)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"><Edit3 className="w-4 h-4" /></button><button onClick={async () => { if (confirm(`Delete ${s.name}?`)) await onDelete(s.id); }} className="p-2 rounded-lg hover:bg-rose-50 text-rose-600"><Trash2 className="w-4 h-4" /></button></div></td></tr>)}
-          {!filtered.length && <tr><td colSpan={3} className="p-10 text-center text-sm text-slate-400">No subjects found.</td></tr>}
-        </tbody></table></div>
-      </div>
-    </div>
-  </div>;
+interface Props{subjects:Subject[];classes:ClassItem[];teachers:Teacher[];assignments:SubjectAssignment[];onSave:(subject:Subject)=>Promise<void>;onDelete:(id:string)=>Promise<void>;onSaveTeacher:(teacher:Teacher)=>Promise<void>;onSaveAssignment:(assignment:SubjectAssignment)=>Promise<void>}
+const norm=(v:any)=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
+const headerKey=(v:any)=>norm(v).replace(/[._-]/g,'');
+export const SubjectsView:React.FC<Props>=({subjects,classes,teachers,assignments,onSave,onDelete,onSaveTeacher,onSaveAssignment})=>{
+ const [query,setQuery]=useState(''),[name,setName]=useState(''),[editing,setEditing]=useState<Subject|null>(null),[error,setError]=useState(''),[saving,setSaving]=useState(false),[uploading,setUploading]=useState(false),[uploadMessage,setUploadMessage]=useState('');
+ const inputRef=useRef<HTMLInputElement>(null);
+ const filtered=useMemo(()=>subjects.filter(s=>s.name.toLowerCase().includes(query.toLowerCase())),[subjects,query]);
+ const teacherById=useMemo(()=>new Map(teachers.map(t=>[t.id,t])),[teachers]);
+ const classById=useMemo(()=>new Map(classes.map(c=>[c.id,c])),[classes]);
+ const subjectById=useMemo(()=>new Map(subjects.map(s=>[s.id,s])),[subjects]);
+ const submit=async(e:React.FormEvent)=>{e.preventDefault();const cleanName=name.trim();if(!cleanName)return setError('Subject name is required.');if(subjects.some(s=>s.name.trim().toLowerCase()===cleanName.toLowerCase()&&s.id!==editing?.id))return setError('This subject already exists.');setSaving(true);setError('');try{const now=new Date().toISOString();await onSave(editing?{...editing,name:cleanName,updatedAt:now}:{id:crypto.randomUUID(),name:cleanName,createdAt:now,updatedAt:now});setName('');setEditing(null)}catch(err:any){setError(err?.message||'Unable to save subject.')}finally{setSaving(false)}};
+ const importFile=async(file:File)=>{setUploading(true);setUploadMessage('');setError('');try{const data=await file.arrayBuffer();const wb=XLSX.read(data,{type:'array'});const rows=XLSX.utils.sheet_to_json<any>(wb.Sheets[wb.SheetNames[0]],{defval:''});if(!rows.length)throw Error('The file contains no data rows.');const keys=Object.keys(rows[0]);const find=(target:string)=>keys.find(k=>headerKey(k)===headerKey(target));const classCol=find('class'),subjectCol=find('subject'),teacherCol=find('teacher');if(!classCol||!subjectCol||!teacherCol)throw Error('Required columns are: class, subject, teacher.');let added=0,updated=0,skipped=0;const now=new Date().toISOString();for(let i=0;i<rows.length;i++){const row=rows[i];const className=String(row[classCol]).trim(),subjectName=String(row[subjectCol]).trim(),teacherName=String(row[teacherCol]).trim();if(!className&&!subjectName&&!teacherName)continue;if(!className||!subjectName||!teacherName){skipped++;continue}const cls=classes.find(c=>norm(c.name)===norm(className));if(!cls)throw Error(`Row ${i+2}: class “${className}” was not found in Campus Data → Classes.`);let subject=subjects.find(s=>norm(s.name)===norm(subjectName));if(!subject){subject={id:crypto.randomUUID(),name:subjectName,createdAt:now,updatedAt:now};await onSave(subject)}else if(subject.name!==subjectName){subject={...subject,name:subjectName,updatedAt:now};await onSave(subject)}let teacher=teachers.find(t=>norm(t.name)===norm(teacherName));if(!teacher){teacher={id:crypto.randomUUID(),name:teacherName,createdAt:now,updatedAt:now};await onSaveTeacher(teacher)}const id=`${cls.id}__${subject.id}`;const existing=assignments.find(a=>a.id===id);await onSaveAssignment(existing?{...existing,teacherId:teacher.id,updatedAt:now}:{id,classId:cls.id,subjectId:subject.id,teacherId:teacher.id,createdAt:now,updatedAt:now});existing?updated++:added++}setUploadMessage(`Import complete: ${added} assignments added, ${updated} updated${skipped?`, ${skipped} incomplete rows skipped`:''}. Teachers were automatically added to the Teachers page.`)}catch(err:any){setError(err?.message||'Unable to import the file.')}finally{setUploading(false);if(inputRef.current)inputRef.current.value=''}};
+ const startEdit=(s:Subject)=>{setEditing(s);setName(s.name);setError('')};const cancel=()=>{setEditing(null);setName('');setError('')};
+ return <div className="space-y-5"><div className="flex items-center justify-between gap-4"><div><h1 className="text-xl font-bold text-slate-900">Subjects</h1><p className="text-xs text-slate-500 mt-1">Manage subjects and class-wise teacher assignments. Upload Excel or CSV using <b>class, subject, teacher</b>.</p></div><div className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-2"><BookOpen className="w-4 h-4"/>{subjects.length} Subjects</div></div>
+ <div className="grid grid-cols-1 lg:grid-cols-3 gap-5"><div className="space-y-5"><form onSubmit={submit} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-fit"><div className="flex items-center justify-between mb-4"><h2 className="font-bold text-sm">{editing?'Edit Subject':'Add Subject'}</h2>{editing&&<button type="button" onClick={cancel}><X className="w-4 h-4 text-slate-400"/></button>}</div><label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Subject Name</label><input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Mathematics" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none"/>{error&&<p className="text-xs text-rose-600 mt-2">{error}</p>}<button disabled={saving} className="mt-4 w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-lg py-2.5 text-xs font-bold flex items-center justify-center gap-2"><Plus className="w-4 h-4"/>{saving?'Saving…':editing?'Update Subject':'Save Subject'}</button></form>
+ <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><div className="flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-emerald-600"/><h2 className="font-bold text-sm">Import class subjects</h2></div><p className="text-xs text-slate-500 mt-2 leading-5">Accepted: <b>.xlsx, .xls, .csv</b>. First sheet/header must contain exactly these fields (order can vary):</p><div className="mt-3 flex gap-2 flex-wrap"><span className="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold">class</span><span className="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold">subject</span><span className="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold">teacher</span></div><button type="button" disabled={uploading} onClick={()=>inputRef.current?.click()} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg py-2.5 text-xs font-bold flex items-center justify-center gap-2"><UploadCloud className="w-4 h-4"/>{uploading?'Importing…':'Upload Excel / CSV'}</button><input ref={inputRef} type="file" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)importFile(f)}}/>{uploadMessage&&<p className="text-xs text-emerald-700 mt-3">{uploadMessage}</p>}</div></div>
+ <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"><div className="p-4 border-b border-slate-100 flex items-center gap-3"><Search className="w-4 h-4 text-slate-400"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search subjects…" className="flex-1 outline-none text-sm"/></div><div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500"><th className="px-4 py-3">SI.NO</th><th className="px-4 py-3">CLASS</th><th className="px-4 py-3">SUBJECT</th><th className="px-4 py-3">TEACHER</th><th className="px-4 py-3 text-right">ACTION</th></tr></thead><tbody>{assignments.filter(a=>{const s=subjectById.get(a.subjectId);return !query||s?.name.toLowerCase().includes(query.toLowerCase())}).map((a,i)=>{const cls=classById.get(a.classId),s=subjectById.get(a.subjectId),t=teacherById.get(a.teacherId);return <tr key={a.id} className="border-t border-slate-100"><td className="px-4 py-3 text-xs text-slate-500">{i+1}</td><td className="px-4 py-3 text-sm font-semibold text-slate-800">{cls?.name||'Unknown class'}</td><td className="px-4 py-3 text-sm font-semibold text-slate-800">{s?.name||'Unknown subject'}</td><td className="px-4 py-3 text-sm text-slate-600">{t?.name||'Unknown teacher'}</td><td className="px-4 py-3"><div className="flex justify-end gap-2">{s&&<button onClick={()=>startEdit(s)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"><Edit3 className="w-4 h-4"/></button>}</div></td></tr>})}{!assignments.length&&<tr><td colSpan={5} className="p-10 text-center text-sm text-slate-400">No class-wise subject assignments yet. Upload a file to begin.</td></tr>}</tbody></table></div></div></div>
+ <p className="text-[11px] text-slate-500">Subjects remain a permanent campus master list. Imported teachers are also stored permanently under the selected campus and will be available for future invigilation, duty allocation and other examination features.</p></div>;
 };
