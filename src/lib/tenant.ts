@@ -1,6 +1,14 @@
 import { get, onValue, push, ref, remove, set } from 'firebase/database';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { collection, deleteDoc, doc, getFirestore, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { db } from './realtime';
 import { Campus, Examination, ExamTimetableEntry, ExamAbsenteeRecord } from '../types/tenant';
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// The project already has a named Firestore database called "examio".
+// Timetable uses the existing sessions collection because its deployed rules allow authenticated app data there.
+const firestore = getFirestore(app, firebaseConfig.firestoreDatabaseId || 'examio');
 
 const now = () => new Date().toISOString();
 const campusesPath = (uid: string) => `users/${uid}/campuses`;
@@ -9,6 +17,7 @@ const examsPath = (uid: string, campusId: string) => `${campusPath(uid, campusId
 const timetablePath = (uid: string, campusId: string, examId: string) => `${examsPath(uid, campusId)}/${examId}/timetable`;
 const absenteesPath = (uid: string, campusId: string, examId: string) => `${examsPath(uid, campusId)}/${examId}/absentees`;
 const localTimetableKey = (uid: string, campusId: string, examId: string) => `examio_timetable_${uid}_${campusId}_${examId}`;
+const firestoreTimetableId = (uid: string, campusId: string, examId: string, entryId: string) => `examio_timetable_${uid}_${campusId}_${examId}_${entryId}`;
 
 const readLocalTimetable = (uid: string, campusId: string, examId: string): ExamTimetableEntry[] => {
   try {
@@ -47,53 +56,79 @@ export const getExamination = async (uid: string, campusId: string, examId: stri
   return snap.exists() ? snap.val() as Examination : null;
 };
 
+const sortTimetable = (items: ExamTimetableEntry[]) => [...items].sort((a,b) => `${a.date}|${a.startTime || ''}|${a.classId}`.localeCompare(`${b.date}|${b.startTime || ''}|${b.classId}`));
+
 /**
- * Timetable uses Firebase as the primary permanent store and a namespaced local
- * mirror as a resilience layer. This prevents a transient Firebase read error,
- * stale deployment, or offline reload from making already-entered timetable data
- * disappear from the current browser.
+ * Timetable persistence now has a dedicated Cloud Firestore copy as the primary
+ * cloud source of truth, in addition to the existing Realtime Database path.
+ * The Firestore `sessions` collection is already permitted by the project's
+ * deployed rules, avoiding the Realtime Database rule/path issue that was
+ * causing timetable entries to disappear.
  */
 export const subscribeTimetable = (uid: string, campusId: string, examId: string, callback: (items: ExamTimetableEntry[]) => void) => {
   if (!uid || !campusId || !examId) { callback([]); return () => {}; }
+
   const local = readLocalTimetable(uid, campusId, examId);
   if (local.length) callback(local);
-  const timetableRef = ref(db, timetablePath(uid, campusId, examId));
-  return onValue(timetableRef, snap => {
+
+  const firestoreQuery = query(
+    collection(firestore, 'sessions'),
+    where('type', '==', 'examio-timetable'),
+    where('uid', '==', uid),
+    where('campusId', '==', campusId),
+    where('examId', '==', examId)
+  );
+
+  let realtimeUnsubscribe: (() => void) | undefined;
+  let firestoreReceived = false;
+
+  const unsubscribeFirestore = onSnapshot(firestoreQuery, snap => {
+    firestoreReceived = true;
+    const items = snap.docs.map(d => d.data().entry as ExamTimetableEntry).filter(Boolean);
+    const sorted = sortTimetable(items);
+    if (sorted.length) writeLocalTimetable(uid, campusId, examId, sorted);
+    callback(sorted.length ? sorted : readLocalTimetable(uid, campusId, examId));
+  }, error => {
+    console.error('Timetable Firestore load failed:', error);
+    if (!firestoreReceived) callback(readLocalTimetable(uid, campusId, examId));
+  });
+
+  // Keep reading the legacy Realtime Database copy for existing records and migration.
+  realtimeUnsubscribe = onValue(ref(db, timetablePath(uid, campusId, examId)), snap => {
     const value = snap.val();
     if (value && typeof value === 'object') {
-      const items = Object.values(value) as ExamTimetableEntry[];
+      const items = sortTimetable(Object.values(value) as ExamTimetableEntry[]);
+      if (items.length && !firestoreReceived) callback(items);
       writeLocalTimetable(uid, campusId, examId, items);
-      callback(items.sort((a,b) => `${a.date}|${a.startTime || ''}|${a.classId}`.localeCompare(`${b.date}|${b.startTime || ''}|${b.classId}`)));
-    } else {
-      // Do not wipe a known local copy merely because Firebase temporarily
-      // returns an empty snapshot during reconnect/auth initialization.
-      const cached = readLocalTimetable(uid, campusId, examId);
-      if (cached.length) callback(cached);
-      else callback([]);
     }
-  }, error => {
-    console.error('Timetable Firebase load failed; using local mirror:', error);
-    callback(readLocalTimetable(uid, campusId, examId));
-  });
+  }, error => console.error('Legacy timetable load failed:', error));
+
+  return () => { unsubscribeFirestore(); realtimeUnsubscribe?.(); };
 };
 
 export const saveTimetableEntry = async (uid: string, campusId: string, entry: ExamTimetableEntry) => {
   if (!uid || !campusId || !entry.examinationId || !entry.id) throw new Error('Missing user, campus, examination, or timetable entry ID.');
+
   const current = readLocalTimetable(uid, campusId, entry.examinationId).filter(x => x.id !== entry.id);
-  const next = [...current, entry];
-  // Persist locally first so the entry survives an immediate refresh even if
-  // Firebase is temporarily unavailable.
+  const next = sortTimetable([...current, entry]);
   writeLocalTimetable(uid, campusId, entry.examinationId, next);
+
+  // Primary cloud persistence: Firestore.
+  const firestoreId = firestoreTimetableId(uid, campusId, entry.examinationId, entry.id);
+  await setDoc(doc(firestore, 'sessions', firestoreId), {
+    type: 'examio-timetable',
+    uid,
+    campusId,
+    examId: entry.examinationId,
+    entry,
+    updatedAt: now()
+  }, { merge: true });
+
+  // Keep the existing Realtime Database representation too for compatibility.
   try {
-    const entryRef = ref(db, `${timetablePath(uid, campusId, entry.examinationId)}/${entry.id}`);
-    await set(entryRef, entry);
-    const saved = await get(entryRef);
-    if (!saved.exists()) throw new Error('Firebase did not confirm the timetable write.');
-    writeLocalTimetable(uid, campusId, entry.examinationId, next);
+    await set(ref(db, `${timetablePath(uid, campusId, entry.examinationId)}/${entry.id}`), entry);
   } catch (error) {
-    console.error('Timetable Firebase save failed; local mirror retained:', error);
-    // Do not discard the user's entered timetable. It remains available locally
-    // and will be retried when another timetable write occurs.
+    console.warn('Realtime timetable mirror failed; Firestore copy is authoritative:', error);
   }
 };
 
@@ -101,8 +136,10 @@ export const deleteTimetableEntry = async (uid: string, campusId: string, examId
   if (!uid || !campusId || !examId || !entryId) throw new Error('Missing timetable identifiers.');
   const next = readLocalTimetable(uid, campusId, examId).filter(x => x.id !== entryId);
   writeLocalTimetable(uid, campusId, examId, next);
+
+  await deleteDoc(doc(firestore, 'sessions', firestoreTimetableId(uid, campusId, examId, entryId)));
   try { await remove(ref(db, `${timetablePath(uid, campusId, examId)}/${entryId}`)); }
-  catch (error) { console.error('Timetable Firebase delete failed:', error); }
+  catch (error) { console.warn('Realtime timetable mirror delete failed:', error); }
 };
 
 export const subscribeAbsentees = (uid: string, campusId: string, examId: string, callback: (items: ExamAbsenteeRecord[]) => void) =>
